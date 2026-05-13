@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Animated Box Example</title>
+    <style>
+        .box {
+            width: 100px;
+            height: 100px;
+            background-color: #3498db; /* Blue */
+            position: relative;
+            animation: moveBox 4s infinite alternate; 
+        }
+
+        /* Define animation */
+        @keyframes moveBox {
+            0%   { left: 0px; top: 0px; background-color: #3498db; }
+            25%  { left: 200px; top: 0px; background-color: #e74c3c; }
+            50%  { left: 200px; top: 200px; background-color: #2ecc71; }
+            75%  { left: 0px; top: 200px; background-color: #f1c40f; }
+            100% { left: 0px; top: 0px; background-color: #3498db; }
+        }
+    </style>
+</head>
+<body>
+    <h2>CSS Animation Box</h2>
+    <div class="box"></div>
+</body>
+</html>
