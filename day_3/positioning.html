@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSS Positioning Example</title>
+    <style>
+        .container {
+            position: relative; /* Parent container for absolute positioning */
+            width: 600px;
+            height: 300px;
+            border: 2px solid black;
+            margin: 20px auto;
+        }
+
+        .box {
+            width: 120px;
+            height: 80px;
+            color: white;
+            text-align: center;
+            line-height: 80px;
+            font-weight: bold;
+        }
+
+        .relative-box {
+            background-color: #3498db; /* Blue */
+            position: relative; /* Moves relative to its normal position */
+            top: 20px;
+            left: 30px;
+        }
+
+        .absolute-box {
+            background-color: #e74c3c; /* Red */
+            position: absolute; /* Positioned relative to parent container */
+            top: 50px;
+            right: 20px;
+        }
+
+        .fixed-box {
+            background-color: #2ecc71; /* Green */
+            position: fixed; /* Stays fixed on screen even when scrolling */
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .sticky-box {
+            background-color: #f1c40f; /* Yellow */
+            position: sticky; /* Sticks to top when scrolling */
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>CSS Positioning Demo</h2>
+
+    <div class="sticky-box box">Sticky Box</div>
+
+    <div class="container">
+        <div class="relative-box box">Relative Box</div>
+        <div class="absolute-box box">Absolute Box</div>
+    </div>
+
+    <p style="width:600px; margin:auto;">
+        Scroll down to see how the <b>fixed box</b> stays in place at the bottom-right corner of the screen, 
+        while the <b>sticky box</b> sticks to the top when scrolling.
+        <br><br>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+        Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
+        <br><br>
+        Keep scrolling to test the sticky and fixed behavior...
+        <br><br>
+        More content here... More content here... More content here...
+        <br><br>
+        Even more content to make the page scrollable...
+    </p>
+
+    <div class="fixed-box box">Fixed Box</div>
+</body>
+</html>

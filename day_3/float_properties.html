@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Float Properties Example</title>
+    <style>
+        .box {
+            width: 200px;
+            height: 100px;
+            margin: 10px;
+            color: white;
+            text-align: center;
+            line-height: 100px;
+            font-weight: bold;
+        }
+
+        .left-box {
+            background-color: #3498db; /* Blue */
+            float: left;  /* Floats to the left */
+        }
+
+        .right-box {
+            background-color: #e74c3c; /* Red */
+            float: right; /* Floats to the right */
+        }
+
+        .content {
+            background-color: #f1c40f; /* Yellow */
+            padding: 10px;
+            clear: both; /* Prevents floating overlap */
+        }
+    </style>
+</head>
+<body>
+    <h2>Float Properties Example</h2>
+
+    <div class="left-box">Left Box</div>
+    <div class="right-box">Right Box</div>
+
+    <div class="content">
+        This is the main content area. Notice how the blue box floats to the left and the red box floats to the right. The yellow section uses <b>clear: both</b> to appear below them.
+    </div>
+</body>
+</html>
