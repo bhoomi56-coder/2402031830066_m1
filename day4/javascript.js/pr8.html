@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Driving Eligibility Check</title>
+</head>
+<body>
+
+  <h2>Driving Eligibility Checker</h2>
+
+  <label>Enter your age:</label>
+  <input type="number" id="ageInput">
+
+  <button onclick="
+    let age = document.getElementById('ageInput').value;
+
+    if (age >= 18) {
+      document.getElementById('result').innerText = 'You are eligible to drive.';
+    } 
+    else if (age > 0) {
+      document.getElementById('result').innerText = 'You are NOT eligible to drive.';
+    } 
+    else {
+      document.getElementById('result').innerText = 'Please enter a valid age.';
+    }
+  ">
+    Check
+  </button>
+
+  <h3 id="result"></h3>
+
+</body>
+</html>

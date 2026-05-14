@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Increment/Decrement Example</title>
+</head>
+<body>
+  <h2>Pre/Post Increment & Decrement</h2>
+  <p id="demo"></p>
+
+  <script>
+    let x = 5;
+
+    let postInc = x++;   // use then increase
+    let preInc  = ++x;   // increase then use
+    let postDec = x--;   // use then decrease
+    let preDec  = --x;   // decrease then use
+
+    document.getElementById("demo").innerHTML =
+      "Post-Increment: " + postInc + "<br>" +
+      "Pre-Increment: " + preInc + "<br>" +
+      "Post-Decrement: " + postDec + "<br>" +
+      "Pre-Decrement: " + preDec;
+  </script>
+</body>
+</html>
