@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ATM PIN Check</title>
+</head>
+<body>
+  <h2>ATM PIN Checking</h2>
+  <script>
+    const correctPIN = "1234";  
+    let attempts = 0;
+
+    while (attempts < 3) {
+      let enteredPIN = prompt("Enter your ATM PIN:");
+
+      if (enteredPIN === correctPIN) {
+        document.write("<h3>✅ Access Granted</h3>");
+        break; // Exit loop if correct
+      } else {
+        alert("❌ Wrong PIN. Try again.");
+        attempts++;
+      }
+    }
+
+    if (attempts === 3) {
+      document.write("<h3>🚫 Card Blocked. Too many incorrect attempts.</h3>");
+    }
+  </script>
+</body>
+</html>

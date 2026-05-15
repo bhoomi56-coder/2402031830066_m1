@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Countdown Timer with Loop</title>
+</head>
+<body>
+  <h2>Countdown Timer</h2>
+  <p id="timer"></p>
+
+  <script>
+    let start = 10; // starting number
+
+    for (let i = start; i >= 0; i--) {
+      setTimeout(function() {
+        if (i === 0) {
+          document.getElementById("timer").innerHTML = "⏰ Time's up!";
+        } else {
+          document.getElementById("timer").innerHTML = i;
+        }
+      }, (start - i) * 1000); // delay increases each loop
+    }
+  </script>
+</body>
+</html>

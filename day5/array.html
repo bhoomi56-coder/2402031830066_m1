@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Car Array Program</title>
+</head>
+
+<body>
+
+    <h2>Car Array Example</h2>
+
+    <script>
+        let car1 = ["Ford", "Toyota", "Honda"];
+        let car2 = ["BMW", "Audi"];
+
+        
+        document.write("First Car = " + car1[0] + "<br><br>");
+
+        
+        car1.push("Kia");
+        document.write("After Push = " + car1 + "<br><br>");
+
+        
+        
+        car1.pop();
+        document.write("After Pop = " + car1 + "<br><br>");
+
+       
+        let result = car1.concat(car2);
+        document.write("After Concat = " + result);
+    </script>
+
+</body>
+</html>

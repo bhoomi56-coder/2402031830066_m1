@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JavaScript Loop Examples</title>
+</head>
+<body>
+  <h1>JavaScript Loop Examples</h1>
+
+  <h2>1. Print numbers from 1 to 10</h2>
+  <script>
+    for (let i = 1; i <= 10; i++) {
+      document.write(i + "<br>");
+    }
+  </script>
+
+  <h2>2. Print even numbers from 1 to 20</h2>
+  <script>
+    for (let i = 2; i <= 20; i += 2) {
+      document.write(i + "<br>");
+    }
+  </script>
+
+  <h2>3. Print odd numbers from 1 to 20</h2>
+  <script>
+    for (let i = 1; i <= 20; i += 2) {
+      document.write(i + "<br>");
+    }
+  </script>
+
+  <h2>4. Find sum of first 10 numbers</h2>
+  <script>
+    let sum = 0;
+    for (let i = 1; i <= 10; i++) {
+      sum += i;
+    }
+    document.write("Sum = " + sum + "<br>");
+  </script>
+
+  <h2>5. Generate multiplication table (Table of 5)</h2>
+  <script>
+    let num = 5;
+    for (let i = 1; i <= 10; i++) {
+      document.write(num + " x " + i + " = " + (num * i) + "<br>");
+    }
+  </script>
+
+  <h2>6. Reverse a string</h2>
+  <script>
+    let str = "Hello";
+    let reversed = "";
+    for (let i = str.length - 1; i >= 0; i--) {
+      reversed += str[i];
+    }
+    document.write("Reversed: " + reversed + "<br>");
+  </script>
+
+  <h2>7. Count vowels in a string</h2>
+  <script>
+    let text = "JavaScript";
+    let vowels = "aeiouAEIOU";
+    let count = 0;
+    for (let i = 0; i < text.length; i++) {
+      if (vowels.includes(text[i])) {
+        count++;
+      }
+    }
+    document.write("Vowel count: " + count + "<br>");
+  </script>
+
+  <h2>8. Display array elements</h2>
+  <script>
+    let arr = ["Apple", "Banana", "Cherry"];
+    for (let i = 0; i < arr.length; i++) {
+      document.write(arr[i] + "<br>");
+    }
+  </script>
+
+  <h2>9. Find largest number in an array</h2>
+  <script>
+    let numbers = [12, 45, 67, 23, 89];
+    let largest = numbers[0];
+    for (let i = 1; i < numbers.length; i++) {
+      if (numbers[i] > largest) {
+        largest = numbers[i];
+      }
+    }
+    document.write("Largest number: " + largest + "<br>");
+  </script>
+
+  <h2>10. Create star pattern</h2>
+  <script>
+    for (let i = 1; i <= 5; i++) {
+      let stars = "";
+      for (let j = 1; j <= i; j++) {
+        stars += "*";
+      }
+      document.write(stars + "<br>");
+    }
+  </script>
+
+</body>
+</html>
