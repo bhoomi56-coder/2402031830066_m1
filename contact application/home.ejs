@@ -1,0 +1,25 @@
+<h2>Contact List</h2>
+
+<a href="/add-contact">➕ Add Contact</a>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Phone</th>
+    <th>Actions</th>
+  </tr>
+
+  <% contacts.forEach(contact => { %>
+    <tr>
+      <td><%= contact.first_name %> <%= contact.last_name %></td>
+      <td><%= contact.email %></td>
+      <td><%= contact.phone %></td>
+      <td>
+        <a href="/view-contact/<%= contact._id %>">👁️ View</a>
+        <a href="/update-contact/<%= contact._id %>">✏️ Edit</a>
+        <a href="/delete-contact/<%= contact._id %>">❌ Delete</a>
+      </td>
+    </tr>
+  <% }) %>
+</table>

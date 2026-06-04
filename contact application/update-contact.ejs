@@ -1,0 +1,12 @@
+<h2>Update Contact</h2>
+
+<form method="POST" action="/update-contact/<%= contact._id %>">
+  <input name="first_name" value="<%= contact.first_name %>" required />
+  <input name="last_name" value="<%= contact.last_name %>" required />
+  <input name="email" value="<%= contact.email %>" required />
+  <input name="phone" value="<%= contact.phone %>" required />
+
+  <button type="submit">Update</button>
+</form>
+
+<a href="/">⬅️ Back</a>
