@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Smart Farming — Real-Time Weather Prediction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ─── VARIABLES ─────────────────────────────────────────── */
+:root {
+  --bg:        #f6fdf7;
+  --bg2:       #edf8ef;
+  --surface:   #ffffff;
+  --surface2:  #f0faf2;
+  --green-900: #052e16;
+  --green-800: #14532d;
+  --green-700: #15803d;
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-400: #4ade80;
+  --green-300: #86efac;
+  --green-100: #dcfce7;
+  --green-50:  #f0fdf4;
+  --teal:      #0d9488;
+  --sky:       #0284c7;
+  --amber:     #d97706;
+  --red:       #dc2626;
+  --text:      #0f2a15;
+  --text2:     #1a4228;
+  --muted:     #5a7a62;
+  --border:    #c6e8cc;
+  --border2:   #a3d4ab;
+  --shadow-sm: 0 2px 8px rgba(15,42,21,0.06);
+  --shadow:    0 8px 32px rgba(15,42,21,0.10);
+  --shadow-lg: 0 20px 60px rgba(15,42,21,0.14);
+  --r:         14px;
+  --r2:        22px;
+  --font:      'Plus Jakarta Sans', sans-serif;
+  --mono:      'Space Mono', monospace;
+}
+
+/* ─── RESET ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+a { text-decoration: none; color: inherit; }
+section { padding: 90px 0; }
+.container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--green-400); border-radius: 3px; }
+
+/* ─── TYPOGRAPHY UTILS ──────────────────────────────────── */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--green-700);
+  margin-bottom: 12px;
+}
+.eyebrow::before {
+  content: '';
+  display: block; width: 18px; height: 2px;
+  background: var(--green-500); border-radius: 1px;
+}
+.section-title {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-weight: 800; line-height: 1.12;
+  letter-spacing: -.025em;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.section-title .hl { color: var(--green-600); }
+.section-desc { color: var(--muted); font-size: 1rem; max-width: 560px; line-height: 1.75; }
+.center { text-align: center; }
+.center .section-desc { margin: 0 auto; }
+
+/* ─── BUTTONS ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 26px; border-radius: 99px;
+  font-family: var(--font); font-size: .9rem; font-weight: 700;
+  border: none; cursor: pointer; transition: all .22s;
+}
+.btn-primary { background: var(--green-600); color: #fff; box-shadow: 0 4px 16px rgba(22,163,74,.3); }
+.btn-primary:hover { background: var(--green-700); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,.38); }
+.btn-ghost { background: transparent; color: var(--green-700); border: 2px solid var(--border2); }
+.btn-ghost:hover { background: var(--green-50); border-color: var(--green-500); transform: translateY(-2px); }
+.btn-sm { padding: 9px 18px; font-size: .82rem; }
+
+/* ─── CARDS ─────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r2);
+  padding: 26px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .28s, box-shadow .28s, border-color .28s;
+}
+.card:hover { transform: translateY(-5px); box-shadow: var(--shadow); border-color: var(--border2); }
+
+/* Tags */
+.tag {
+  display: inline-block; padding: 3px 11px;
+  background: var(--green-100); color: var(--green-800);
+  border-radius: 99px; font-size: .72rem; font-weight: 700;
+  border: 1px solid var(--border);
+}
+.tag-blue  { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+.tag-amber { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.tag-red   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
+/* ─── REVEAL ─────────────────────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(26px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.in { opacity: 1; transform: translateY(0); }
+.d1{transition-delay:.1s} .d2{transition-delay:.18s}
+.d3{transition-delay:.26s} .d4{transition-delay:.34s}
+.d5{transition-delay:.42s} .d6{transition-delay:.5s}
+
+/* ─── NAVBAR ─────────────────────────────────────────────── */
+#navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(246,253,247,0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1.5px solid var(--border);
+  transition: box-shadow .3s;
+}
+#navbar.scrolled { box-shadow: var(--shadow-sm); }
+.nav-inner {
+  max-width: 1140px; margin: 0 auto; padding: 0 24px;
+  height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.nav-logo {
+  font-weight: 800; font-size: 1.15rem; color: var(--green-800);
+  display: flex; align-items: center; gap: 8px;
+}
+.logo-box {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--green-600), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; box-shadow: 0 3px 10px rgba(22,163,74,.3);
+}
+.nav-menu { display: flex; list-style: none; gap: 4px; }
+.nav-menu a {
+  font-size: .875rem; font-weight: 600; color: var(--muted);
+  padding: 7px 12px; border-radius: 9px; transition: all .2s;
+}
+.nav-menu a:hover { color: var(--green-700); background: var(--green-50); }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; background: var(--green-100);
+  border: 1px solid var(--green-300); border-radius: 99px;
+  font-size: .75rem; font-weight: 700; color: var(--green-700);
+}
+.pulse { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)} 60%{box-shadow:0 0 0 7px rgba(34,197,94,0)} }
+.ham { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; }
+.ham span { width: 20px; height: 2px; background: var(--text); border-radius: 2px; display: block; transition: all .3s; }
+.mob-nav { display: none; background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 14px 24px; flex-direction: column; gap: 2px; }
+.mob-nav.open { display: flex; }
+.mob-nav a { padding: 10px 12px; font-weight: 600; color: var(--muted); border-radius: 9px; font-size: .9rem; transition: all .15s; }
+.mob-nav a:hover { background: var(--green-50); color: var(--green-700); }
+
+/* ─── HERO ───────────────────────────────────────────────── */
+#hero {
+  min-height: 100vh; display: flex; align-items: center;
+  padding-top: 64px; position: relative; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, #f6fdf7 0%, #e8f8ed 40%, #d1f5db 100%);
+  z-index: 0;
+}
+/* Floating leaf circles */
+.hero-decor {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+}
+.decor-circle {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(34,197,94,0.12) 0%, transparent 70%);
+  animation: driftY 8s ease-in-out infinite;
+}
+.dc1 { width: 500px; height: 500px; top: -100px; right: -80px; animation-delay: 0s; }
+.dc2 { width: 300px; height: 300px; bottom: -60px; left: -60px; animation-delay: 3s; }
+.dc3 { width: 200px; height: 200px; top: 40%; left: 30%; animation-delay: 5s; }
+@keyframes driftY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-28px)} }
+
+/* Dot grid */
+.hero-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, var(--green-300) 1px, transparent 1px);
+  background-size: 36px 36px;
+  opacity: .25;
+  z-index: 0;
+}
+.hero-wrap {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; width: 100%;
+}
+.hero-left { animation: fadeUp .85s ease both; }
+.hero-super {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 16px;
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 99px; margin-bottom: 24px;
+  font-size: .8rem; font-weight: 700; color: var(--green-700);
+  box-shadow: var(--shadow-sm);
+}
+.hero-h1 {
+  font-size: clamp(2.6rem, 5.2vw, 4.2rem);
+  font-weight: 900; line-height: 1.06;
+  letter-spacing: -.03em; margin-bottom: 20px;
+}
+.hero-h1 .grad {
+  background: linear-gradient(135deg, var(--green-700) 0%, var(--teal) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-sub {
+  font-size: 1.1rem; color: var(--muted); line-height: 1.72;
+  margin-bottom: 34px; max-width: 420px;
+}
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 44px; }
+.hero-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.hpill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; background: var(--surface);
+  border: 1.5px solid var(--border); border-radius: 99px;
+  font-size: .78rem; font-weight: 600; color: var(--muted);
+  box-shadow: var(--shadow-sm);
+}
+/* Hero Right — Live Mini Dashboard */
+.hero-right { animation: fadeUp .85s ease .2s both; display: flex; justify-content: center; }
+.mini-dash {
+  width: 100%; max-width: 420px;
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 24px; padding: 24px;
+  box-shadow: var(--shadow-lg);
+}
+.mini-dash-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.mini-dash-title { font-weight: 800; font-size: .95rem; color: var(--text); }
+.mini-location { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.mini-metric {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 14px;
+}
+.mm-icon { font-size: 1.4rem; margin-bottom: 6px; }
+.mm-val { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+.mm-label { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.mini-status {
+  background: var(--green-100); border: 1.5px solid var(--green-300);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ms-left { display: flex; align-items: center; gap: 10px; }
+.ms-icon { font-size: 1.6rem; }
+.ms-label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.ms-val { font-weight: 800; font-size: 1rem; color: var(--green-700); }
+.ms-right .tag { font-size: .78rem; padding: 5px 14px; }
+.mini-footer {
+  text-align: center; margin-top: 12px;
+  font-size: .72rem; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.spin { display: inline-block; animation: spin 2s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(38px)} to{opacity:1;transform:translateY(0)} }
+
+/* ─── PROBLEM ─────────────────────────────────────────────── */
+#problem { background: var(--bg2); }
+.prob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center; }
+.prob-cards { display: flex; flex-direction: column; gap: 14px; }
+.prob-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-left: 3px solid var(--red); border-radius: var(--r);
+  padding: 18px 20px; transition: transform .2s;
+}
+.prob-item:hover { transform: translateX(6px); }
+.pi-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; }
+.pi-body h4 { font-weight: 700; font-size: .95rem; margin-bottom: 4px; color: var(--text); }
+.pi-body p { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+.stat-box {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px;
+}
+.stat-item {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r); padding: 18px; text-align: center;
+}
+.stat-n { font-family: var(--mono); font-size: 1.8rem; font-weight: 700; color: var(--green-600); }
+.stat-l { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+
+/* ─── SOLUTION ────────────────────────────────────────────── */
+#solution { background: var(--bg); }
+.sol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: start; }
+.sol-steps { display: flex; flex-direction: column; gap: 0; }
+.sol-step {
+  display: flex; gap: 18px;
+  padding-bottom: 24px; position: relative;
+}
+.sol-step:last-child { padding-bottom: 0; }
+.sol-step::before {
+  content: ''; position: absolute;
+  left: 19px; top: 42px; bottom: 0; width: 2px;
+  background: linear-gradient(180deg, var(--green-300), transparent);
+}
+.sol-step:last-child::before { display: none; }
+.step-circle {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 50%; background: var(--green-600);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-weight: 700; color: #fff; font-size: .9rem;
+  box-shadow: 0 4px 14px rgba(22,163,74,.3); z-index: 1;
+}
+.step-content h4 { font-weight: 700; font-size: .95rem; margin-bottom: 5px; color: var(--text); }
+.step-content p { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+.sol-api-card {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: var(--r2); padding: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.api-visual {
+  background: #0c1a0c; border-radius: 12px; padding: 18px;
+  font-family: var(--mono); font-size: .8rem; margin: 16px 0;
+  line-height: 1.8; overflow-x: auto;
+}
+.api-visual .k { color: #86efac; } /* key */
+.api-visual .v { color: #7dd3fc; } /* value */
+.api-visual .s { color: #fcd34d; } /* string */
+.api-visual .m { color: #f9a8d4; } /* muted */
+.logic-rules {
+  display: flex; flex-direction: column; gap: 10px; margin-top: 16px;
+}
+.rule {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px; font-size: .85rem;
+}
+.rule-yes { background: #dcfce7; border: 1.5px solid #86efac; }
+.rule-no  { background: #fee2e2; border: 1.5px solid #fca5a5; }
+.rule-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.3; }
+.rule b { font-weight: 700; }
+
+/* ─── FEATURES ────────────────────────────────────────────── */
+#features { background: var(--bg2); }
+.feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+.feat-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r2); padding: 26px;
+  position: relative; overflow: hidden; transition: all .3s;
+}
+.feat-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(34,197,94,0.04) 0%, transparent 60%);
+  opacity: 0; transition: opacity .3s;
+}
+.feat-card:hover::before { opacity: 1; }
+.feat-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); border-color: var(--border2); }
+.feat-icon-box {
+  width: 52px; height: 52px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; margin-bottom: 16px;
+  position: relative; z-index: 1;
+}
+.fib-green  { background: var(--green-100); }
+.fib-blue   { background: #e0f2fe; }
+.fib-teal   { background: #ccfbf1; }
+.fib-amber  { background: #fef3c7; }
+.fib-purple { background: #f3e8ff; }
+.fib-rose   { background: #ffe4e6; }
+.feat-card h3 { font-size: .97rem; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+.feat-card p  { font-size: .84rem; color: var(--muted); line-height: 1.65; position: relative; z-index: 1; }
+
+/* ─── LIVE PREDICTION ─────────────────────────────────────── */
+#livepred { background: var(--bg); }
+/* Top search bar */
+.city-search-wrap {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: var(--r2); padding: 24px 28px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow); margin-bottom: 28px; flex-wrap: wrap;
+}
+.city-search-label { font-weight: 700; font-size: .9rem; color: var(--text); white-space: nowrap; }
+.city-input-wrap { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 200px; }
+.city-input {
+  flex: 1; padding: 11px 16px;
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: var(--font); font-size: .9rem;
+  color: var(--text); outline: none; transition: border-color .2s;
+}
+.city-input:focus { border-color: var(--green-500); box-shadow: 0 0 0 3px rgba(34,197,94,.12); }
+.city-input::placeholder { color: var(--muted); }
+.sep { color: var(--muted); font-size: .85rem; font-weight: 600; white-space: nowrap; }
+/* Loading state */
+.pred-loading {
+  text-align: center; padding: 52px 20px;
+  display: none;
+}
+.pred-loading.active { display: block; }
+.loading-anim {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 4px solid var(--green-100);
+  border-top-color: var(--green-500);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+.pred-loading p { color: var(--muted); font-size: .9rem; }
+/* Error */
+.pred-error {
+  background: #fee2e2; border: 1.5px solid #fca5a5;
+  border-radius: var(--r); padding: 16px 20px;
+  color: #7f1d1d; font-size: .9rem; display: none;
+}
+.pred-error.active { display: block; }
+/* Main prediction grid */
+.pred-main { display: none; }
+.pred-main.active { display: block; }
+
+.weather-cards-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+.w-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r2); padding: 22px 18px; text-align: center;
+  box-shadow: var(--shadow-sm); transition: all .3s;
+}
+.w-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+.wc-icon { font-size: 2rem; margin-bottom: 10px; }
+.wc-val { font-family: var(--mono); font-size: 2rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.wc-label { font-size: .73rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.wc-sub { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+/* Result cards row */
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+.result-card {
+  border-radius: var(--r2); padding: 26px; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.rc-yes { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border: 2px solid #86efac; }
+.rc-no  { background: linear-gradient(135deg, #fee2e2, #fecaca); border: 2px solid #fca5a5; }
+.rc-med { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #fcd34d; }
+.rc-high { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border: 2px solid #86efac; }
+.rc-low  { background: linear-gradient(135deg, #fee2e2, #fecaca); border: 2px solid #fca5a5; }
+.rc-icon { font-size: 2.8rem; margin-bottom: 10px; }
+.rc-title { font-size: .73rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+.rc-val { font-size: 1.8rem; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+.rc-yes .rc-val   { color: #15803d; }
+.rc-no .rc-val    { color: #b91c1c; }
+.rc-med .rc-val   { color: #92400e; }
+.rc-high .rc-val  { color: #15803d; }
+.rc-low .rc-val   { color: #b91c1c; }
+.rc-desc { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+
+/* Suggestion banner */
+.suggestion-banner {
+  background: linear-gradient(135deg, var(--green-800), var(--teal));
+  border-radius: var(--r2); padding: 22px 26px;
+  display: flex; align-items: center; gap: 18px; color: #fff; margin-bottom: 20px;
+}
+.sb-icon { font-size: 2rem; flex-shrink: 0; }
+.sb-title { font-weight: 800; font-size: 1rem; margin-bottom: 4px; }
+.sb-text { font-size: .85rem; opacity: .85; line-height: 1.5; }
+.sb-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+.sb-time { font-size: .72rem; opacity: .65; }
+.sb-loc { font-weight: 700; font-size: .85rem; }
+
+/* Last updated */
+.last-updated {
+  font-size: .78rem; color: var(--muted); text-align: center; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+
+/* API Notice */
+.api-notice {
+  background: #fef9c3; border: 1.5px solid #fde047;
+  border-radius: var(--r); padding: 14px 18px;
+  font-size: .83rem; color: #713f12; line-height: 1.6;
+  margin-bottom: 20px;
+}
+.api-notice strong { color: #78350f; }
+.api-notice code {
+  background: rgba(0,0,0,.08); padding: 1px 6px;
+  border-radius: 4px; font-family: var(--mono); font-size: .78rem;
+}
+
+/* ─── HOW IT WORKS ────────────────────────────────────────── */
+#howitworks { background: var(--bg2); }
+.hiw-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; position: relative; }
+.hiw-grid::before {
+  content: ''; position: absolute;
+  top: 40px; left: calc(12.5% + 8px); right: calc(12.5% + 8px);
+  height: 2px; background: linear-gradient(90deg, transparent, var(--green-300), transparent);
+}
+.hiw-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r2); padding: 22px 18px; text-align: center;
+  position: relative; z-index: 1; transition: all .3s;
+}
+.hiw-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); border-color: var(--border2); }
+.hiw-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--green-600); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-weight: 700; font-size: 1rem;
+  margin: 0 auto 14px; box-shadow: 0 4px 14px rgba(22,163,74,.3);
+}
+.hiw-icon { font-size: 1.8rem; margin-bottom: 10px; }
+.hiw-card h4 { font-size: .9rem; font-weight: 700; margin-bottom: 7px; }
+.hiw-card p { font-size: .8rem; color: var(--muted); line-height: 1.6; }
+
+/* ─── DASHBOARD ───────────────────────────────────────────── */
+#dashboard { background: var(--bg); }
+.dash-wrap {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: var(--r2); overflow: hidden; box-shadow: var(--shadow-lg);
+}
+.dash-topbar {
+  background: linear-gradient(135deg, var(--green-900), var(--green-800));
+  padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.dt-left { display: flex; align-items: center; gap: 12px; }
+.dt-logo { font-weight: 800; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+.dt-status { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--green-300); font-weight: 600; }
+.dt-right { display: flex; align-items: center; gap: 16px; }
+.dt-time { font-family: var(--mono); font-size: .85rem; color: rgba(255,255,255,.65); }
+.dt-refresh { padding: 6px 14px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; color: #fff; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: var(--font); transition: background .2s; display: flex; align-items: center; gap: 5px; }
+.dt-refresh:hover { background: rgba(255,255,255,.18); }
+.dash-body { padding: 24px; }
+.dash-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.dm-card {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: var(--r); padding: 18px;
+}
+.dm-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+.dm-val { font-family: var(--mono); font-size: 1.9rem; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.dm-change { font-size: .75rem; color: var(--muted); }
+.dm-bar { height: 5px; background: var(--border); border-radius: 3px; margin-top: 10px; }
+.dm-fill { height: 100%; border-radius: 3px; transition: width 1.2s ease; }
+.charts-row { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+.chart-panel {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: var(--r); padding: 18px;
+}
+.chart-panel-title { font-weight: 700; font-size: .88rem; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+.chart-panel-sub { font-size: .74rem; color: var(--muted); margin-bottom: 14px; }
+.chart-panel canvas { max-height: 200px; }
+.irrigStatus {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 200px; gap: 14px;
+}
+.irrigCircle {
+  width: 110px; height: 110px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 2.4rem; border: 4px solid; transition: all .5s;
+}
+.irrigCircle.yes { border-color: var(--green-500); background: var(--green-100); box-shadow: 0 0 32px rgba(34,197,94,.2); }
+.irrigCircle.no  { border-color: #fca5a5; background: #fee2e2; box-shadow: 0 0 32px rgba(239,68,68,.12); }
+.irrigLabel { font-weight: 800; font-size: 1rem; }
+
+/* ─── TECHNOLOGIES ────────────────────────────────────────── */
+#technologies { background: var(--bg2); }
+.tech-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.tech-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r2); padding: 22px; text-align: center; transition: all .3s;
+}
+.tech-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--border2); }
+.tc-icon { font-size: 2.2rem; margin-bottom: 12px; }
+.tc-name { font-weight: 700; font-size: .9rem; margin-bottom: 6px; }
+.tc-desc { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+
+/* ─── TEAM ────────────────────────────────────────────────── */
+#team { background: var(--bg); }
+.team-center { display: flex; justify-content: center; }
+.team-main {
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: var(--r2); padding: 44px 40px; text-align: center;
+  max-width: 380px; width: 100%; box-shadow: var(--shadow); transition: all .3s;
+  position: relative; overflow: hidden;
+}
+.team-main::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, var(--green-600), var(--teal));
+}
+.team-main:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+.avatar {
+  width: 96px; height: 96px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-600), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem; margin: 0 auto 18px; border: 4px solid var(--green-100);
+  box-shadow: 0 6px 20px rgba(22,163,74,.25);
+}
+.team-main h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 5px; }
+.team-role { color: var(--teal); font-weight: 700; font-size: .88rem; margin-bottom: 12px; }
+.team-bio { color: var(--muted); font-size: .85rem; line-height: 1.7; margin-bottom: 18px; }
+.team-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-bottom: 20px; }
+.team-socials { display: flex; justify-content: center; gap: 10px; }
+.tsoc {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; font-size: .88rem;
+  display: flex; align-items: center; justify-content: center; transition: all .2s;
+}
+.tsoc:hover { background: var(--green-100); color: var(--green-700); border-color: var(--green-300); }
+
+/* ─── FOOTER ──────────────────────────────────────────────── */
+footer {
+  background: var(--green-900); color: rgba(255,255,255,.7);
+  padding: 36px 0; border-top: 1px solid rgba(255,255,255,.08);
+}
+.footer-wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.footer-logo { font-weight: 800; color: var(--green-400); display: flex; align-items: center; gap: 8px; }
+.footer-copy { font-size: .82rem; }
+.footer-links { display: flex; gap: 18px; }
+.footer-links a { font-size: .82rem; color: rgba(255,255,255,.5); transition: color .2s; }
+.footer-links a:hover { color: var(--green-400); }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .hero-wrap, .prob-grid, .sol-grid { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .feat-grid { grid-template-columns: 1fr 1fr; }
+  .hiw-grid { grid-template-columns: 1fr 1fr; }
+  .hiw-grid::before { display: none; }
+  .dash-metrics { grid-template-columns: 1fr 1fr; }
+  .charts-row { grid-template-columns: 1fr; }
+  .tech-grid { grid-template-columns: 1fr 1fr; }
+  .weather-cards-grid { grid-template-columns: 1fr 1fr; }
+  .nav-menu { display: none; }
+  .ham { display: flex; }
+}
+@media (max-width: 600px) {
+  section { padding: 64px 0; }
+  .feat-grid { grid-template-columns: 1fr; }
+  .hiw-grid { grid-template-columns: 1fr; }
+  .dash-metrics { grid-template-columns: 1fr 1fr; }
+  .tech-grid { grid-template-columns: 1fr 1fr; }
+  .result-grid { grid-template-columns: 1fr; }
+  .weather-cards-grid { grid-template-columns: 1fr 1fr; }
+  .footer-wrap { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+  .city-search-wrap { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ NAVBAR ══════════ -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="logo-box">🌱</div>
+      AI<span style="color:var(--teal)">Farm</span>
+    </div>
+    <ul class="nav-menu">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#solution">Solution</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#livepred">Live Prediction</a></li>
+      <li><a href="#dashboard">Dashboard</a></li>
+      <li><a href="#team">Team</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="live-badge"><div class="pulse"></div>Live Data</div>
+      <div class="ham" id="ham"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+  <div class="mob-nav" id="mobNav">
+    <a href="#problem">Problem</a>
+    <a href="#solution">Solution</a>
+    <a href="#features">Features</a>
+    <a href="#livepred">Live Prediction</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#team">Team</a>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-dots"></div>
+  <div class="hero-decor">
+    <div class="decor-circle dc1"></div>
+    <div class="decor-circle dc2"></div>
+    <div class="decor-circle dc3"></div>
+  </div>
+  <div class="container">
+    <div class="hero-wrap">
+      <div class="hero-left">
+        <div class="hero-super">
+          <div class="pulse"></div>
+          Real-Time Weather API · No Sensors Required
+        </div>
+        <h1 class="hero-h1">
+          <span class="grad">AI Smart Farming</span><br>
+          System
+        </h1>
+        <p class="hero-sub">
+          Automatically fetch live weather data from anywhere in the world and get instant AI-powered irrigation predictions — no hardware, no manual input.
+        </p>
+        <div class="hero-btns">
+          <a href="#livepred" class="btn btn-primary"><i class="fas fa-bolt"></i> Check Live Prediction</a>
+          <a href="#solution" class="btn btn-ghost"><i class="fas fa-info-circle"></i> How It Works</a>
+        </div>
+        <div class="hero-pills">
+          <div class="hpill">🌐 Weather API</div>
+          <div class="hpill">🤖 AI Logic</div>
+          <div class="hpill">📍 Any Location</div>
+          <div class="hpill">💧 Auto Prediction</div>
+        </div>
+      </div>
+      <!-- Mini Live Dashboard preview -->
+      <div class="hero-right">
+        <div class="mini-dash" id="miniDash">
+          <div class="mini-dash-top">
+            <div class="mini-dash-title">🌿 Live Farm Status</div>
+            <div class="mini-location"><i class="fas fa-map-marker-alt" style="color:var(--green-600)"></i> <span id="miniLoc">Detecting…</span></div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-metric">
+              <div class="mm-icon">🌡️</div>
+              <div class="mm-val" id="miniTemp">--</div>
+              <div class="mm-label">Temperature</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mm-icon">💧</div>
+              <div class="mm-val" id="miniHum">--</div>
+              <div class="mm-label">Humidity</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mm-icon">🌧️</div>
+              <div class="mm-val" id="miniRain">--</div>
+              <div class="mm-label">Rainfall</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mm-icon">💨</div>
+              <div class="mm-val" id="miniWind">--</div>
+              <div class="mm-label">Wind</div>
+            </div>
+          </div>
+          <div class="mini-status">
+            <div class="ms-left">
+              <div class="ms-icon">💧</div>
+              <div>
+                <div class="ms-label">Irrigation Decision</div>
+                <div class="ms-val" id="miniDecision">Fetching data…</div>
+              </div>
+            </div>
+            <div class="ms-right"><span class="tag" id="miniTag">Loading</span></div>
+          </div>
+          <div class="mini-footer">
+            <i class="fas fa-sync-alt spin" style="font-size:.65rem;color:var(--green-500)"></i>
+            Auto-refreshes every 5 minutes
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PROBLEM ══════════ -->
+<section id="problem">
+  <div class="container">
+    <div class="prob-grid">
+      <div class="reveal">
+        <div class="eyebrow">❌ The Problem</div>
+        <h2 class="section-title">Sensors Are <span class="hl">Not the Answer</span> for Small Farmers</h2>
+        <p class="section-desc">Over 80% of Indian farmers are small-scale, with less than 2 hectares of land. Sensor-based smart farming is simply out of reach for them.</p>
+        <div class="stat-box">
+          <div class="stat-item reveal d1">
+            <div class="stat-n">₹15k+</div>
+            <div class="stat-l">Avg sensor setup cost</div>
+          </div>
+          <div class="stat-item reveal d2">
+            <div class="stat-n">86%</div>
+            <div class="stat-l">Small farmers in India</div>
+          </div>
+          <div class="stat-item reveal d3">
+            <div class="stat-n">3–6mo</div>
+            <div class="stat-l">Avg sensor lifespan in soil</div>
+          </div>
+          <div class="stat-item reveal d4">
+            <div class="stat-n">₹0</div>
+            <div class="stat-l">Our solution cost</div>
+          </div>
+        </div>
+      </div>
+      <div class="prob-cards reveal d2">
+        <div class="prob-item">
+          <div class="pi-icon">💸</div>
+          <div class="pi-body">
+            <h4>High Hardware Cost</h4>
+            <p>IoT sensors, Arduino boards, relay modules, and Wi-Fi adapters cost ₹10,000–₹20,000 per farm. Unaffordable for marginal farmers.</p>
+          </div>
+        </div>
+        <div class="prob-item">
+          <div class="pi-icon">🔧</div>
+          <div class="pi-body">
+            <h4>Constant Maintenance Needed</h4>
+            <p>Soil sensors corrode, break, and need re-calibration every few months. Farmers need tech expertise they simply don't have.</p>
+          </div>
+        </div>
+        <div class="prob-item">
+          <div class="pi-icon">📡</div>
+          <div class="pi-body">
+            <h4>Poor Rural Connectivity</h4>
+            <p>Real-time IoT data upload requires stable internet — unavailable or unaffordable in most rural agricultural regions of India.</p>
+          </div>
+        </div>
+        <div class="prob-item">
+          <div class="pi-icon">🧑‍🌾</div>
+          <div class="pi-body">
+            <h4>Technical Barrier</h4>
+            <p>Setting up and operating sensor systems requires technical knowledge most farmers simply haven't had access to learn.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ SOLUTION ══════════ -->
+<section id="solution">
+  <div class="container">
+    <div class="sol-grid">
+      <div class="reveal">
+        <div class="eyebrow">✅ Our Solution</div>
+        <h2 class="section-title">Replace Sensors with <span class="hl">Live Weather API</span></h2>
+        <p class="section-desc" style="margin-bottom:28px">Free, real-time weather data from OpenWeatherMap is publicly available for every location in the world. We use it as our "virtual sensor" — for zero cost.</p>
+        <div class="sol-steps">
+          <div class="sol-step">
+            <div class="step-circle">01</div>
+            <div class="step-content"><h4>Detect User Location</h4><p>Browser's Geolocation API automatically finds the farmer's GPS coordinates with one permission click.</p></div>
+          </div>
+          <div class="sol-step">
+            <div class="step-circle">02</div>
+            <div class="step-content"><h4>Fetch Live Weather Data</h4><p>Using <code style="font-family:var(--mono);font-size:.8rem;background:var(--green-100);padding:1px 6px;border-radius:4px">fetch()</code> API, we call OpenWeatherMap to get temperature, humidity, and rainfall in real-time.</p></div>
+          </div>
+          <div class="sol-step">
+            <div class="step-circle">03</div>
+            <div class="step-content"><h4>Apply AI Prediction Logic</h4><p>Our JavaScript rules engine processes the weather data and predicts soil moisture level and irrigation need instantly.</p></div>
+          </div>
+          <div class="sol-step">
+            <div class="step-circle">04</div>
+            <div class="step-content"><h4>Display Smart Recommendation</h4><p>Farmer sees a clear YES/NO decision with soil moisture status and crop-specific advice — no technical knowledge needed.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal d2">
+        <div class="sol-api-card">
+          <div class="eyebrow" style="margin-bottom:8px">🔌 API Response Preview</div>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:0">Live data returned by OpenWeatherMap for any city:</p>
+          <div class="api-visual">
+<span class="m">{</span><br>
+&nbsp;&nbsp;<span class="k">"city"</span>: <span class="s">"Surat, IN"</span>,<br>
+&nbsp;&nbsp;<span class="k">"temp"</span>: <span class="v">32.4</span> <span class="m">// °C</span>,<br>
+&nbsp;&nbsp;<span class="k">"humidity"</span>: <span class="v">38</span> <span class="m">// %</span>,<br>
+&nbsp;&nbsp;<span class="k">"rainfall"</span>: <span class="v">0</span> <span class="m">// mm (1h)</span>,<br>
+&nbsp;&nbsp;<span class="k">"wind"</span>: <span class="v">14.2</span> <span class="m">// km/h</span>,<br>
+&nbsp;&nbsp;<span class="k">"weather"</span>: <span class="s">"Clear sky"</span><br>
+<span class="m">}</span>
+          </div>
+          <div class="eyebrow" style="margin-bottom:10px">🤖 AI Decision Rules</div>
+          <div class="logic-rules">
+            <div class="rule rule-yes">
+              <div class="rule-icon">💧</div>
+              <div>
+                <b>IRRIGATE:</b> If humidity &lt; 40% <b>AND</b> rainfall = 0mm<br>
+                <span style="font-size:.8rem;color:#166534">→ Soil moisture is LOW → Irrigation REQUIRED</span>
+              </div>
+            </div>
+            <div class="rule rule-no">
+              <div class="rule-icon">🚫</div>
+              <div>
+                <b>SKIP:</b> If humidity &gt; 70% <b>OR</b> rainfall &gt; 0mm<br>
+                <span style="font-size:.8rem;color:#7f1d1d">→ Soil has enough moisture → No irrigation needed</span>
+              </div>
+            </div>
+            <div class="rule" style="background:#fef9c3;border:1.5px solid #fde047">
+              <div class="rule-icon">⚠️</div>
+              <div>
+                <b>MONITOR:</b> Humidity 40–70%, rainfall = 0mm<br>
+                <span style="font-size:.8rem;color:#713f12">→ Moderate moisture → Check again in 3–4 hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FEATURES ══════════ -->
+<section id="features">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:52px">
+      <div class="eyebrow" style="justify-content:center">System Features</div>
+      <h2 class="section-title">Everything <span class="hl">Automatic</span></h2>
+      <p class="section-desc">Zero manual input. The system detects your location, fetches live weather, and gives you a farm decision in seconds.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card reveal d1">
+        <div class="feat-icon-box fib-blue">🌐</div>
+        <h3>Live Weather API Integration</h3>
+        <p>Connects to OpenWeatherMap's free API to fetch real-time temperature, humidity, rainfall, and wind speed data for any location worldwide.</p>
+        <div style="margin-top:12px"><span class="tag tag-blue">OpenWeatherMap</span></div>
+      </div>
+      <div class="feat-card reveal d2">
+        <div class="feat-icon-box fib-green">🤖</div>
+        <h3>AI Prediction Engine</h3>
+        <p>Rule-based AI logic processes live weather parameters to predict soil moisture level (Low/Medium/High) and irrigation requirement instantly.</p>
+        <div style="margin-top:12px"><span class="tag">JavaScript ML</span></div>
+      </div>
+      <div class="feat-card reveal d3">
+        <div class="feat-icon-box fib-teal">💧</div>
+        <h3>Instant Irrigation Decision</h3>
+        <p>Outputs a clear YES or NO irrigation recommendation with reasoning — designed to be understood by farmers without any technical background.</p>
+        <div style="margin-top:12px"><span class="tag">YES / NO Output</span></div>
+      </div>
+      <div class="feat-card reveal d4">
+        <div class="feat-icon-box fib-amber">📊</div>
+        <h3>Auto-Refreshing Dashboard</h3>
+        <p>Dashboard auto-refreshes weather data every 5 minutes with animated Chart.js graphs showing temperature and humidity trends in real-time.</p>
+        <div style="margin-top:12px"><span class="tag tag-amber">Chart.js</span></div>
+      </div>
+      <div class="feat-card reveal d5">
+        <div class="feat-icon-box fib-rose">📍</div>
+        <h3>Location-Based Data</h3>
+        <p>Uses browser's built-in GPS Geolocation API to auto-detect the farmer's location. Also supports manual city search for any region in India.</p>
+        <div style="margin-top:12px"><span class="tag tag-blue">GPS + City Search</span></div>
+      </div>
+      <div class="feat-card reveal d6">
+        <div class="feat-icon-box fib-purple">🌾</div>
+        <h3>Crop-Specific Advice</h3>
+        <p>Tailored irrigation advice for major crops like Wheat, Rice, Cotton, and Groundnut — factoring in current weather and growth stage needs.</p>
+        <div style="margin-top:12px"><span class="tag">Multi-Crop Support</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ LIVE PREDICTION ══════════ -->
+<section id="livepred">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:36px">
+      <div class="eyebrow" style="justify-content:center;color:var(--teal)">🤖 Live AI System</div>
+      <h2 class="section-title"><span class="hl">Real-Time</span> Prediction Engine</h2>
+      <p class="section-desc">Your location is auto-detected. Or type any city name to get an instant AI farming prediction powered by live weather data.</p>
+    </div>
+
+    <!-- Search Row -->
+    <div class="city-search-wrap reveal">
+      <div class="city-search-label">📍 Farm Location:</div>
+      <div class="city-input-wrap">
+        <input type="text" class="city-input" id="cityInput" placeholder="e.g. Surat, Ahmedabad, Rajkot, Delhi…" onkeypress="if(event.key==='Enter')fetchByCity()">
+        <button class="btn btn-primary btn-sm" onclick="fetchByCity()"><i class="fas fa-search"></i> Search</button>
+      </div>
+      <div class="sep">— or —</div>
+      <button class="btn btn-ghost btn-sm" onclick="fetchByGPS()"><i class="fas fa-location-arrow"></i> Use My GPS</button>
+    </div>
+
+    <!-- API Notice -->
+    <div class="api-notice reveal">
+      <strong>⚙️ Developer Note:</strong> This demo uses the <strong>OpenWeatherMap API</strong>. Replace <code>YOUR_API_KEY_HERE</code> in the JavaScript with your free API key from <a href="https://openweathermap.org/api" target="_blank" style="color:#78350f;text-decoration:underline">openweathermap.org</a> (free signup). Until then, demo data is shown for demonstration purposes.
+    </div>
+
+    <!-- Loading -->
+    <div class="pred-loading reveal" id="predLoading">
+      <div class="loading-anim"></div>
+      <p id="loadingMsg">Fetching live weather data…</p>
+    </div>
+
+    <!-- Error -->
+    <div class="pred-error reveal" id="predError">
+      <i class="fas fa-exclamation-triangle"></i> <span id="errorMsg">Could not fetch weather data. Please check the city name or enable location access.</span>
+    </div>
+
+    <!-- Main Prediction Result -->
+    <div class="pred-main" id="predMain">
+
+      <!-- Suggestion Banner -->
+      <div class="suggestion-banner reveal" id="suggBanner">
+        <div class="sb-icon" id="suggIcon">💧</div>
+        <div>
+          <div class="sb-title" id="suggTitle">Loading…</div>
+          <div class="sb-text" id="suggText">Fetching real-time weather data…</div>
+        </div>
+        <div class="sb-right">
+          <div class="sb-loc" id="suggLoc">—</div>
+          <div class="sb-time" id="suggTime">—</div>
+        </div>
+      </div>
+
+      <!-- Weather Cards -->
+      <div class="weather-cards-grid reveal">
+        <div class="w-card">
+          <div class="wc-icon">🌡️</div>
+          <div class="wc-val" id="wTemp" style="color:#d97706">--</div>
+          <div class="wc-label">Temperature</div>
+          <div class="wc-sub" id="wTempFeel">--</div>
+        </div>
+        <div class="w-card">
+          <div class="wc-icon">💧</div>
+          <div class="wc-val" id="wHum" style="color:#0284c7">--</div>
+          <div class="wc-label">Humidity</div>
+          <div class="wc-sub" id="wHumStatus">--</div>
+        </div>
+        <div class="w-card">
+          <div class="wc-icon">🌧️</div>
+          <div class="wc-val" id="wRain" style="color:#0891b2">--</div>
+          <div class="wc-label">Rainfall (1hr)</div>
+          <div class="wc-sub" id="wRainStatus">--</div>
+        </div>
+        <div class="w-card">
+          <div class="wc-icon">💨</div>
+          <div class="wc-val" id="wWind" style="color:#16a34a">--</div>
+          <div class="wc-label">Wind Speed</div>
+          <div class="wc-sub" id="wDesc">--</div>
+        </div>
+      </div>
+
+      <!-- AI Result Cards -->
+      <div class="result-grid reveal">
+        <div class="result-card" id="moistureCard">
+          <div class="rc-icon" id="moistureIcon">🌱</div>
+          <div class="rc-title">Predicted Soil Moisture</div>
+          <div class="rc-val" id="moistureVal">—</div>
+          <div class="rc-desc" id="moistureDesc">—</div>
+        </div>
+        <div class="result-card" id="irrigCard">
+          <div class="rc-icon" id="irrigIcon">💧</div>
+          <div class="rc-title">Irrigation Required</div>
+          <div class="rc-val" id="irrigVal">—</div>
+          <div class="rc-desc" id="irrigDesc">—</div>
+        </div>
+      </div>
+
+      <!-- Last updated -->
+      <div class="last-updated" id="lastUpdated">
+        <i class="fas fa-clock"></i> Last updated: <span id="updateTime">—</span>
+        <span style="margin-left:12px">· Auto-refreshes in <span id="countdown">300</span>s</span>
+      </div>
+
+    </div><!-- /predMain -->
+  </div>
+</section>
+
+<!-- ══════════ HOW IT WORKS ══════════ -->
+<section id="howitworks">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:52px">
+      <div class="eyebrow" style="justify-content:center">Process</div>
+      <h2 class="section-title">How the System <span class="hl">Works</span></h2>
+      <p class="section-desc">Fully automated — from GPS coordinates to farm decision in under 3 seconds, with no manual input from the farmer.</p>
+    </div>
+    <div class="hiw-grid reveal">
+      <div class="hiw-card d1">
+        <div class="hiw-num">1</div>
+        <div class="hiw-icon">📍</div>
+        <h4>Auto-Detect Location</h4>
+        <p>Browser's Geolocation API captures farmer's GPS coordinates with a single permission. Alternatively, type any city name.</p>
+      </div>
+      <div class="hiw-card d2">
+        <div class="hiw-num">2</div>
+        <div class="hiw-icon">🌐</div>
+        <h4>Fetch Live Weather</h4>
+        <p>JavaScript <code style="font-family:var(--mono);font-size:.78rem">fetch()</code> calls OpenWeatherMap API and retrieves temperature, humidity, and rainfall in real-time.</p>
+      </div>
+      <div class="hiw-card d3">
+        <div class="hiw-num">3</div>
+        <div class="hiw-icon">🤖</div>
+        <h4>AI Rule Processing</h4>
+        <p>Weather values are passed through our AI decision logic which predicts soil moisture level and irrigation requirement.</p>
+      </div>
+      <div class="hiw-card d4">
+        <div class="hiw-num">4</div>
+        <div class="hiw-icon">✅</div>
+        <h4>Show Instant Result</h4>
+        <p>Clear YES/NO decision with soil moisture status, crop advice, and an auto-refreshing live dashboard displayed immediately.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<section id="dashboard">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:36px">
+      <div class="eyebrow" style="justify-content:center">Live Dashboard</div>
+      <h2 class="section-title">Auto-Updating <span class="hl">Farm Monitor</span></h2>
+      <p class="section-desc">Real-time metrics and charts that automatically refresh with the latest weather data every 5 minutes.</p>
+    </div>
+    <div class="dash-wrap reveal">
+      <div class="dash-topbar">
+        <div class="dt-left">
+          <div class="dt-logo"><div class="logo-box" style="width:28px;height:28px;font-size:.85rem">🌱</div> SmartFarm AI Dashboard</div>
+          <div class="dt-status"><div class="pulse"></div> Live · Auto-refresh ON</div>
+        </div>
+        <div class="dt-right">
+          <div class="dt-time" id="dashTime">--:--:--</div>
+          <button class="dt-refresh" onclick="refreshDashboard()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+      </div>
+      <div class="dash-body">
+        <div class="dash-metrics">
+          <div class="dm-card">
+            <div class="dm-label"><i class="fas fa-thermometer-half" style="color:#d97706"></i> Temperature</div>
+            <div class="dm-val" id="dTemp" style="color:#d97706">--</div>
+            <div class="dm-change" id="dTempChange">Live value</div>
+            <div class="dm-bar"><div class="dm-fill" id="dTempBar" style="width:0%;background:linear-gradient(90deg,#fbbf24,#ef4444)"></div></div>
+          </div>
+          <div class="dm-card">
+            <div class="dm-label"><i class="fas fa-tint" style="color:#0284c7"></i> Humidity</div>
+            <div class="dm-val" id="dHum" style="color:#0284c7">--</div>
+            <div class="dm-change" id="dHumChange">Live value</div>
+            <div class="dm-bar"><div class="dm-fill" id="dHumBar" style="width:0%;background:linear-gradient(90deg,#60a5fa,#0284c7)"></div></div>
+          </div>
+          <div class="dm-card">
+            <div class="dm-label"><i class="fas fa-cloud-rain" style="color:#0891b2"></i> Rainfall</div>
+            <div class="dm-val" id="dRain" style="color:#0891b2">--</div>
+            <div class="dm-change" id="dRainChange">Last 1 hour</div>
+            <div class="dm-bar"><div class="dm-fill" id="dRainBar" style="width:0%;background:linear-gradient(90deg,#67e8f9,#0891b2)"></div></div>
+          </div>
+          <div class="dm-card">
+            <div class="dm-label"><i class="fas fa-leaf" style="color:#16a34a"></i> Soil Moisture (AI)</div>
+            <div class="dm-val" id="dMoist" style="color:#16a34a">--</div>
+            <div class="dm-change" id="dMoistChange">Predicted</div>
+            <div class="dm-bar"><div class="dm-fill" id="dMoistBar" style="width:0%;background:linear-gradient(90deg,#4ade80,#16a34a)"></div></div>
+          </div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-panel">
+            <div class="chart-panel-title">📈 Weather Trend</div>
+            <div class="chart-panel-sub">Temperature & Humidity — Last 10 data points</div>
+            <canvas id="trendChart"></canvas>
+          </div>
+          <div class="chart-panel">
+            <div class="chart-panel-title">💧 Irrigation Status</div>
+            <div class="chart-panel-sub">Current AI decision</div>
+            <div class="irrigStatus">
+              <div class="irrigCircle" id="dashIrrigCircle">💧</div>
+              <div class="irrigLabel" id="dashIrrigLabel">Loading…</div>
+              <div style="font-size:.82rem;color:var(--muted);text-align:center;max-width:200px" id="dashIrrigSub">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TECHNOLOGIES ══════════ -->
+<section id="technologies">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:48px">
+      <div class="eyebrow" style="justify-content:center">Tech Stack</div>
+      <h2 class="section-title">Built With <span class="hl">Modern Web Tech</span></h2>
+      <p class="section-desc">Everything runs in the browser — no backend server required. Clean, lightweight, and deployable for free.</p>
+    </div>
+    <div class="tech-grid reveal">
+      <div class="tech-card d1"><div class="tc-icon">🌐</div><div class="tc-name">HTML5 + CSS3</div><div class="tc-desc">Semantic structure, CSS Grid/Flexbox, animations and responsive design</div></div>
+      <div class="tech-card d2"><div class="tc-icon">⚡</div><div class="tc-name">JavaScript ES6+</div><div class="tc-desc">fetch() API, async/await, Geolocation API, DOM manipulation</div></div>
+      <div class="tech-card d3"><div class="tc-icon">🌤️</div><div class="tc-name">OpenWeatherMap API</div><div class="tc-desc">Free real-time weather data — temperature, humidity, rainfall for any city</div></div>
+      <div class="tech-card d4"><div class="tc-icon">📊</div><div class="tc-name">Chart.js 4</div><div class="tc-desc">Interactive animated line and bar charts for live weather trend visualization</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ TEAM ══════════ -->
+<section id="team">
+  <div class="container">
+    <div class="center reveal" style="margin-bottom:44px">
+      <div class="eyebrow" style="justify-content:center">The Builder</div>
+      <h2 class="section-title">Meet the <span class="hl">Innovator</span></h2>
+    </div>
+    <div class="team-center reveal">
+      <div class="team-main">
+        <div class="avatar">🧑‍💻</div>
+        <h2>Arjun Monpara</h2>
+        <div class="team-role">🌱 AI Farming Innovator · Web Developer</div>
+        <p class="team-bio">Final-year Computer Science student from Surat, Gujarat. Built this entire AI smart farming system — from API integration to prediction logic — without using a single physical sensor.</p>
+        <div class="team-tags">
+          <span class="tag">JavaScript</span>
+          <span class="tag">APIs</span>
+          <span class="tag tag-blue">AI/ML</span>
+          <span class="tag">Smart Farming</span>
+        </div>
+        <div class="team-socials">
+          <button class="tsoc"><i class="fab fa-github"></i></button>
+          <button class="tsoc"><i class="fab fa-linkedin"></i></button>
+          <button class="tsoc"><i class="fas fa-envelope"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-wrap">
+      <div class="footer-logo"><div class="logo-box" style="width:28px;height:28px;font-size:.85rem">🌱</div> AI Smart Farming</div>
+      <div class="footer-copy">© 2024 Arjun Monpara — College Innovation Project · Gujarat, India</div>
+      <div class="footer-links">
+        <a href="#hero">Home</a>
+        <a href="#livepred">Prediction</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#team">Team</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+/* ━━━ CONFIG ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+// ⚠️ Replace with your FREE key from openweathermap.org
+const API_KEY = 'YOUR_API_KEY_HERE';
+const USE_DEMO_DATA = (API_KEY === 'YOUR_API_KEY_HERE'); // auto-switches to demo if no key
+
+/* ━━━ DEMO DATA (used when no API key) ━━━━━━━━━ */
+const DEMO_CITIES = {
+  surat:       { name:'Surat, IN',       temp:34.2, feel:37, hum:36, rain:0,   wind:12.6, desc:'Clear sky',     lat:21.17, lon:72.83 },
+  ahmedabad:   { name:'Ahmedabad, IN',   temp:36.8, feel:40, hum:32, rain:0,   wind:15.4, desc:'Sunny',          lat:23.02, lon:72.57 },
+  rajkot:      { name:'Rajkot, IN',      temp:35.5, feel:38, hum:42, rain:0.5, wind:18.2, desc:'Partly cloudy', lat:22.30, lon:70.80 },
+  mumbai:      { name:'Mumbai, IN',      temp:29.4, feel:33, hum:82, rain:4.2, wind:22.0, desc:'Thunderstorm',  lat:19.07, lon:72.87 },
+  delhi:       { name:'Delhi, IN',       temp:38.1, feel:42, hum:28, rain:0,   wind:9.8,  desc:'Hazy sun',      lat:28.70, lon:77.10 },
+  pune:        { name:'Pune, IN',        temp:30.2, feel:32, hum:68, rain:1.8, wind:14.2, desc:'Light rain',    lat:18.52, lon:73.85 },
+  jaipur:      { name:'Jaipur, IN',      temp:39.5, feel:44, hum:22, rain:0,   wind:8.4,  desc:'Very sunny',    lat:26.91, lon:75.78 },
+};
+
+/* ━━━ STATE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let currentData = null;
+let countdownVal = 300;
+let countdownTimer = null;
+let trendLabels = [];
+let trendTemps  = [];
+let trendHums   = [];
+let trendChart  = null;
+
+/* ━━━ NAVBAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+document.getElementById('ham').addEventListener('click', () => {
+  document.getElementById('mobNav').classList.toggle('open');
+});
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ━━━ REVEAL OBSERVER ━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+/* ━━━ CLOCK ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function updateClock() {
+  const now = new Date();
+  document.getElementById('dashTime').textContent = now.toLocaleTimeString('en-IN');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ━━━ TREND CHART INIT ━━━━━━━━━━━━━━━━━━━━━━━━ */
+function initTrendChart() {
+  const ctx = document.getElementById('trendChart');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        {
+          label: 'Temperature °C',
+          data: trendTemps,
+          borderColor: '#d97706',
+          backgroundColor: 'rgba(217,119,6,0.08)',
+          fill: true, tension: 0.4, pointRadius: 4,
+          pointBackgroundColor: '#d97706'
+        },
+        {
+          label: 'Humidity %',
+          data: trendHums,
+          borderColor: '#0284c7',
+          backgroundColor: 'rgba(2,132,199,0.08)',
+          fill: true, tension: 0.4, pointRadius: 4,
+          pointBackgroundColor: '#0284c7'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, color: '#5a7a62', boxWidth: 12 } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(15,42,21,0.05)' }, ticks: { color: '#5a7a62', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(15,42,21,0.05)' }, ticks: { color: '#5a7a62', font: { size: 10 } } }
+      }
+    }
+  });
+}
+initTrendChart();
+
+/* ━━━ AI PREDICTION LOGIC ━━━━━━━━━━━━━━━━━━━━━ */
+function predictIrrigation(temp, hum, rain) {
+  // Primary rules
+  if (hum < 40 && rain === 0) {
+    return {
+      irrigate: true,
+      moisture: 'Low',
+      moisturePct: 22,
+      mClass: 'rc-low',
+      mIcon: '🔴',
+      iClass: 'rc-yes',
+      iIcon: '💧',
+      iLabel: 'YES — Irrigate Now',
+      iDesc: `Humidity is critically low (${hum}%) with no rainfall. Soil moisture is depleted. Start irrigation immediately to prevent crop stress.`,
+      mDesc: `Very dry conditions. Soil moisture estimated below 25%. Crops are under water stress.`,
+      bannerIcon: '💧',
+      bannerTitle: '🚨 Irrigation Required Immediately',
+      bannerText: `Low humidity (${hum}%) + No rainfall = Dry soil. Your crops need water now.`,
+      suggest: 'Water immediately for 30–45 minutes per section. Check soil by hand — if top 2 inches are dry, it confirms our prediction.'
+    };
+  }
+  if (hum > 70 || rain > 0) {
+    return {
+      irrigate: false,
+      moisture: 'High',
+      moisturePct: 78,
+      mClass: 'rc-high',
+      mIcon: '🟢',
+      iClass: 'rc-no',
+      iIcon: '🚫',
+      iLabel: 'NO — Skip Irrigation',
+      iDesc: `${rain > 0 ? `Rainfall of ${rain}mm detected.` : `High humidity (${hum}%)`} Soil has adequate moisture. Irrigating now would cause waterlogging.`,
+      mDesc: 'Good moisture levels detected. Soil is well-hydrated. No water stress on crops.',
+      bannerIcon: '✅',
+      bannerTitle: '✅ No Irrigation Needed Today',
+      bannerText: `${rain > 0 ? `Rainfall detected (${rain}mm).` : `Humidity is high (${hum}%).`} Save water — your soil is well-moisturised.`,
+      suggest: 'Monitor again in 6–8 hours. If rainfall was heavy, check for waterlogging and ensure proper drainage.'
+    };
+  }
+  // Middle range
+  return {
+    irrigate: false,
+    moisture: 'Medium',
+    moisturePct: 52,
+    mClass: 'rc-med',
+    mIcon: '🟡',
+    iClass: 'rc-med',
+    iIcon: '⚠️',
+    iLabel: 'MONITOR — Check Later',
+    iDesc: `Moderate humidity (${hum}%) with no rainfall. Soil moisture is adequate for now but declining. Re-check in 3–4 hours.`,
+    mDesc: 'Moderate moisture level. Crops are okay for now but conditions are drying. Monitor closely.',
+    bannerIcon: '⚠️',
+    bannerTitle: '⚠️ Monitor — Check in 3–4 Hours',
+    bannerText: `Humidity is moderate (${hum}%). No rain. Soil moisture is declining — watch the situation.`,
+    suggest: 'Consider light irrigation in the evening if temperature stays above 32°C. Mulching can help retain soil moisture.'
+  };
+}
+
+/* ━━━ DISPLAY RESULTS ━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function displayResults(data) {
+  currentData = data;
+  const p = predictIrrigation(data.temp, data.hum, data.rain);
+
+  // Weather Cards
+  document.getElementById('wTemp').textContent  = data.temp.toFixed(1) + '°C';
+  document.getElementById('wTempFeel').textContent = `Feels like ${data.feel}°C`;
+  document.getElementById('wHum').textContent   = data.hum + '%';
+  document.getElementById('wHumStatus').textContent = data.hum < 40 ? '🔴 Very Low' : data.hum > 70 ? '🟢 High' : '🟡 Moderate';
+  document.getElementById('wRain').textContent  = data.rain + 'mm';
+  document.getElementById('wRainStatus').textContent = data.rain === 0 ? '☀️ No rain' : '🌧️ Raining';
+  document.getElementById('wWind').textContent  = data.wind + ' km/h';
+  document.getElementById('wDesc').textContent  = data.desc;
+
+  // Moisture Card
+  const mCard = document.getElementById('moistureCard');
+  mCard.className = 'result-card ' + p.mClass;
+  document.getElementById('moistureIcon').textContent = p.mIcon;
+  document.getElementById('moistureVal').textContent  = p.moisture;
+  document.getElementById('moistureDesc').textContent = p.mDesc;
+
+  // Irrigation Card
+  const iCard = document.getElementById('irrigCard');
+  iCard.className = 'result-card ' + p.iClass;
+  document.getElementById('irrigIcon').textContent = p.iIcon;
+  document.getElementById('irrigVal').textContent  = p.iLabel;
+  document.getElementById('irrigDesc').textContent = p.iDesc;
+
+  // Banner
+  document.getElementById('suggIcon').textContent  = p.bannerIcon;
+  document.getElementById('suggTitle').textContent = p.bannerTitle;
+  document.getElementById('suggText').textContent  = p.bannerText + ' ' + p.suggest;
+  document.getElementById('suggLoc').textContent   = data.name;
+  document.getElementById('suggTime').textContent  = new Date().toLocaleString('en-IN');
+
+  // Last updated
+  document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('en-IN');
+
+  // Update Dashboard
+  updateDashboard(data, p);
+
+  // Update mini hero dash
+  updateMiniDash(data, p);
+
+  // Add to trend
+  const t = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  trendLabels.push(t); trendTemps.push(data.temp); trendHums.push(data.hum);
+  if (trendLabels.length > 10) { trendLabels.shift(); trendTemps.shift(); trendHums.shift(); }
+  if (trendChart) trendChart.update();
+
+  // Show results
+  document.getElementById('predMain').classList.add('active');
+  document.getElementById('predLoading').classList.remove('active');
+
+  // Start countdown
+  startCountdown();
+}
+
+function updateDashboard(data, p) {
+  document.getElementById('dTemp').textContent  = data.temp.toFixed(1) + '°C';
+  document.getElementById('dHum').textContent   = data.hum + '%';
+  document.getElementById('dRain').textContent  = data.rain + 'mm';
+  document.getElementById('dMoist').textContent = p.moisture;
+
+  document.getElementById('dTempChange').textContent  = data.desc;
+  document.getElementById('dHumChange').textContent   = data.hum < 40 ? 'Low — Dry air' : data.hum > 70 ? 'High — Humid' : 'Moderate';
+  document.getElementById('dRainChange').textContent  = data.rain > 0 ? 'Active rainfall' : 'No recent rain';
+  document.getElementById('dMoistChange').textContent = 'AI Predicted';
+
+  // Bar fills
+  document.getElementById('dTempBar').style.width   = Math.min(100, (data.temp / 50) * 100) + '%';
+  document.getElementById('dHumBar').style.width    = data.hum + '%';
+  document.getElementById('dRainBar').style.width   = Math.min(100, (data.rain / 20) * 100) + '%';
+  document.getElementById('dMoistBar').style.width  = p.moisturePct + '%';
+
+  // Irrigation circle
+  const circle = document.getElementById('dashIrrigCircle');
+  circle.className = 'irrigCircle ' + (p.irrigate ? 'yes' : 'no');
+  circle.textContent = p.irrigate ? '💧' : '🚫';
+  document.getElementById('dashIrrigLabel').textContent = p.irrigate ? 'IRRIGATE NOW' : 'SKIP TODAY';
+  document.getElementById('dashIrrigLabel').style.color = p.irrigate ? 'var(--green-700)' : '#b91c1c';
+  document.getElementById('dashIrrigSub').textContent   = p.iDesc.substring(0, 80) + '…';
+}
+
+function updateMiniDash(data, p) {
+  document.getElementById('miniLoc').textContent      = data.name;
+  document.getElementById('miniTemp').textContent     = data.temp.toFixed(1) + '°C';
+  document.getElementById('miniHum').textContent      = data.hum + '%';
+  document.getElementById('miniRain').textContent     = data.rain + 'mm';
+  document.getElementById('miniWind').textContent     = data.wind + 'km/h';
+  document.getElementById('miniDecision').textContent = p.iLabel;
+  const t = document.getElementById('miniTag');
+  t.textContent = p.irrigate ? 'YES' : (p.moisture === 'Medium' ? 'MONITOR' : 'NO');
+  t.className = 'tag ' + (p.irrigate ? '' : p.moisture === 'Medium' ? 'tag-amber' : 'tag-blue');
+}
+
+/* ━━━ FETCH BY CITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+async function fetchByCity() {
+  const city = document.getElementById('cityInput').value.trim();
+  if (!city) { alert('Please enter a city name.'); return; }
+  showLoading(`Fetching live weather for "${city}"…`);
+
+  if (USE_DEMO_DATA) {
+    await useDemoData(city); return;
+  }
+
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('City not found');
+    const d = await res.json();
+    processOWMData(d);
+  } catch(e) {
+    showError('❌ City not found. Try "Surat, IN" or "Ahmedabad, IN". ' + e.message);
+  }
+}
+
+/* ━━━ FETCH BY GPS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+async function fetchByGPS() {
+  if (!navigator.geolocation) {
+    showError('Your browser does not support location detection. Please type a city name.');
+    return;
+  }
+  showLoading('Detecting your GPS location…');
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      if (USE_DEMO_DATA) {
+        await useDemoDataByCoords(lat, lon); return;
+      }
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+        const res = await fetch(url);
+        const d = await res.json();
+        processOWMData(d);
+      } catch(e) {
+        showError('Could not fetch weather for your location. Please type a city name.');
+      }
+    },
+    err => {
+      // If GPS denied, use demo data for Surat
+      showLoading('GPS access denied. Loading demo data for Surat…');
+      setTimeout(() => {
+        displayResults(DEMO_CITIES.surat);
+        document.getElementById('predError').classList.remove('active');
+      }, 1200);
+    }
+  );
+}
+
+/* ━━━ PROCESS OWM RESPONSE ━━━━━━━━━━━━━━━━━━━━ */
+function processOWMData(d) {
+  const data = {
+    name:  d.name + ', ' + d.sys.country,
+    temp:  Math.round(d.main.temp * 10) / 10,
+    feel:  Math.round(d.main.feels_like * 10) / 10,
+    hum:   d.main.humidity,
+    rain:  d.rain ? Math.round((d.rain['1h'] || 0) * 10) / 10 : 0,
+    wind:  Math.round(d.wind.speed * 3.6 * 10) / 10, // m/s to km/h
+    desc:  d.weather[0].description.charAt(0).toUpperCase() + d.weather[0].description.slice(1),
+    lat:   d.coord.lat,
+    lon:   d.coord.lon
+  };
+  displayResults(data);
+}
+
+/* ━━━ DEMO DATA HELPERS ━━━━━━━━━━━━━━━━━━━━━━━ */
+async function useDemoData(cityInput) {
+  await fakeDelay();
+  const key = cityInput.toLowerCase().replace(/[^a-z]/g,'');
+  let data = null;
+  for (const k of Object.keys(DEMO_CITIES)) {
+    if (key.includes(k) || k.includes(key.substring(0,4))) { data = {...DEMO_CITIES[k]}; break; }
+  }
+  if (!data) {
+    // Unknown city: generate plausible random demo data
+    data = {
+      name: cityInput + ', IN',
+      temp: 25 + Math.round(Math.random()*15 * 10)/10,
+      feel: 28 + Math.round(Math.random()*12),
+      hum:  20 + Math.floor(Math.random()*70),
+      rain: Math.random() < 0.3 ? Math.round(Math.random()*8*10)/10 : 0,
+      wind: Math.round((8 + Math.random()*20)*10)/10,
+      desc: ['Clear sky','Partly cloudy','Scattered clouds','Light breeze'][Math.floor(Math.random()*4)]
+    };
+  }
+  // Add small random variation to make it feel live
+  data.temp += (Math.random()-0.5)*1.5; data.temp = Math.round(data.temp*10)/10;
+  data.hum  += Math.floor((Math.random()-0.5)*6);
+  data.hum   = Math.max(10, Math.min(100, data.hum));
+  displayResults(data);
+}
+
+async function useDemoDataByCoords(lat, lon) {
+  await fakeDelay();
+  // Find nearest demo city
+  let nearest = DEMO_CITIES.surat, minDist = Infinity;
+  for (const c of Object.values(DEMO_CITIES)) {
+    if (!c.lat) continue;
+    const d = Math.sqrt((c.lat-lat)**2 + (c.lon-lon)**2);
+    if (d < minDist) { minDist = d; nearest = c; }
+  }
+  const data = {...nearest};
+  data.temp += (Math.random()-0.5)*2; data.temp = Math.round(data.temp*10)/10;
+  displayResults(data);
+}
+
+function fakeDelay(ms=1200) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ━━━ UI HELPERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function showLoading(msg) {
+  document.getElementById('predError').classList.remove('active');
+  document.getElementById('predMain').classList.remove('active');
+  document.getElementById('predLoading').classList.add('active');
+  document.getElementById('loadingMsg').textContent = msg;
+}
+function showError(msg) {
+  document.getElementById('predLoading').classList.remove('active');
+  document.getElementById('predError').classList.add('active');
+  document.getElementById('errorMsg').textContent = msg;
+}
+
+/* ━━━ COUNTDOWN & AUTO-REFRESH ━━━━━━━━━━━━━━━━ */
+function startCountdown() {
+  clearInterval(countdownTimer);
+  countdownVal = 300;
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    const el = document.getElementById('countdown');
+    if (el) el.textContent = countdownVal;
+    if (countdownVal <= 0) {
+      refreshDashboard();
+    }
+  }, 1000);
+}
+
+function refreshDashboard() {
+  if (currentData) {
+    // Simulate slight data variation on refresh
+    const d = {...currentData};
+    d.temp += (Math.random()-0.5)*1.2; d.temp = Math.round(d.temp*10)/10;
+    d.hum  += Math.floor((Math.random()-0.5)*5); d.hum = Math.max(10, Math.min(100, d.hum));
+    d.wind += (Math.random()-0.5)*2; d.wind = Math.round(Math.max(0,d.wind)*10)/10;
+    displayResults(d);
+  }
+}
+
+/* ━━━ AUTO INIT — try GPS on load ━━━━━━━━━━━━━ */
+window.addEventListener('load', () => {
+  // Kick off GPS fetch (works silently on load)
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        if (USE_DEMO_DATA) { useDemoDataByCoords(lat, lon); }
+        else {
+          fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`)
+            .then(r => r.json()).then(processOWMData).catch(() => useDemoDataByCoords(lat, lon));
+        }
+      },
+      () => {
+        // GPS denied → show Surat demo data silently
+        displayResults(DEMO_CITIES.surat);
+      },
+      { timeout: 6000 }
+    );
+  } else {
+    displayResults(DEMO_CITIES.surat);
+  }
+});
+</script>
+</body>
+</html>

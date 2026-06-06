@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCN Simulation Lab — 2CS202CC23</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --panel: #111820;
+    --border: #1e2d3d;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --red: #ff3355;
+    --yellow: #ffd700;
+    --text: #c8d6e5;
+    --muted: #4a6080;
+    --glow: 0 0 12px rgba(0,212,255,0.4);
+    --glow-green: 0 0 12px rgba(0,255,136,0.5);
+    --glow-red: 0 0 16px rgba(255,51,85,0.6);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, #0a1520 0%, #0d1117 100%);
+  }
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 17px;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    letter-spacing: 1px;
+  }
+  .logo span { color: var(--accent2); }
+  .course-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  /* ── Mode Toggle ── */
+  .mode-bar {
+    display: flex;
+    gap: 0;
+    padding: 18px 28px 0;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 10px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn:first-child { border-radius: 4px 0 0 4px; }
+  .mode-btn:last-child  { border-radius: 0 4px 4px 0; }
+  .mode-btn.active {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--glow);
+  }
+  .mode-btn:hover:not(.active) { color: var(--text); border-color: #2e4060; }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0;
+    padding: 18px 28px;
+    height: calc(100vh - 120px);
+  }
+
+  /* ── Canvas Panel ── */
+  .canvas-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px 0 0 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-title {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: var(--glow);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .sim-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--panel);
+  }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 3px;
+    border: 1px solid;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05); }
+  .btn-primary:hover { background: rgba(0,255,136,0.15); box-shadow: var(--glow-green); }
+  .btn-danger  { border-color: var(--red);   color: var(--red);   background: rgba(255,51,85,0.05); }
+  .btn-danger:hover  { background: rgba(255,51,85,0.15); box-shadow: var(--glow-red); }
+  .btn-warn    { border-color: var(--yellow); color: var(--yellow); background: rgba(255,215,0,0.05); }
+  .btn-warn:hover    { background: rgba(255,215,0,0.15); }
+  .btn-muted   { border-color: var(--muted); color: var(--muted); background: transparent; }
+  .btn-muted:hover   { border-color: var(--text); color: var(--text); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Status Bar ── */
+  .status-bar {
+    padding: 8px 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+  }
+  .stat { display: flex; gap: 6px; align-items: center; }
+  .stat-label { color: var(--muted); }
+  .stat-val { color: var(--accent); font-weight: bold; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.red   { color: var(--red); }
+  .stat-val.yellow{ color: var(--yellow); }
+
+  /* ── Log Panel ── */
+  .log-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .log-entries {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .log-entries::-webkit-scrollbar { width: 4px; }
+  .log-entries::-webkit-scrollbar-track { background: transparent; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-entry {
+    padding: 4px 6px;
+    border-radius: 2px;
+    border-left: 2px solid transparent;
+    animation: fadeIn 0.2s ease;
+    word-break: break-word;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
+
+  .log-info    { border-color: var(--accent);  color: #8ab4cc; }
+  .log-success { border-color: var(--green);   color: var(--green); }
+  .log-error   { border-color: var(--red);     color: var(--red); background: rgba(255,51,85,0.05); }
+  .log-warn    { border-color: var(--yellow);  color: var(--yellow); }
+  .log-system  { border-color: var(--muted);   color: var(--muted); }
+
+  .log-time { opacity: 0.5; margin-right: 4px; }
+
+  /* ── CSMA/CD Canvas Elements ── */
+  .csma-node {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    cursor: default;
+    z-index: 10;
+  }
+  .csma-node.idle    { border-color: var(--muted); color: var(--muted); box-shadow: none; }
+  .csma-node.sensing { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 16px rgba(255,215,0,0.4); animation: pulse-yellow 0.8s infinite; }
+  .csma-node.sending { border-color: var(--green); color: var(--green); box-shadow: var(--glow-green); }
+  .csma-node.backoff { border-color: var(--accent2); color: var(--accent2); box-shadow: 0 0 12px rgba(255,107,53,0.4); }
+  .csma-node.success { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.08); }
+  .csma-node.collision{ border-color: var(--red); color: var(--red); box-shadow: var(--glow-red); animation: shake 0.4s; }
+  .csma-node-label { font-size: 9px; margin-top: 2px; opacity: 0.7; }
+
+  @keyframes pulse-yellow { 0%,100%{box-shadow:0 0 8px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 20px rgba(255,215,0,0.7)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+  /* ── Bus ── */
+  .bus-line {
+    position: absolute;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .bus-line.active { background: var(--accent); box-shadow: var(--glow); }
+  .bus-line.collision { background: var(--red); box-shadow: var(--glow-red); animation: flicker 0.15s infinite; }
+  @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── Packet ── */
+  .packet {
+    position: absolute;
+    height: 16px;
+    min-width: 36px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    z-index: 20;
+    pointer-events: none;
+    transition: left 0.05s linear, top 0.05s linear;
+    padding: 0 6px;
+  }
+  .packet.data    { background: rgba(0,212,255,0.2); border: 1px solid var(--accent); color: var(--accent); }
+  .packet.jam     { background: rgba(255,51,85,0.25); border: 1px solid var(--red); color: var(--red); }
+  .packet.ack     { background: rgba(0,255,136,0.15); border: 1px solid var(--green); color: var(--green); }
+  .packet.nak     { background: rgba(255,107,53,0.15); border: 1px solid var(--accent2); color: var(--accent2); }
+
+  /* ── Collision Flash ── */
+  .collision-flash {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,51,85,0.8) 0%, rgba(255,51,85,0) 70%);
+    pointer-events: none;
+    z-index: 30;
+    animation: explode 0.6s ease-out forwards;
+  }
+  @keyframes explode {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+
+  /* ── S&W Canvas Elements ── */
+  .sw-node {
+    position: absolute;
+    width: 80px;
+    text-align: center;
+  }
+  .sw-node-box {
+    border: 2px solid var(--muted);
+    border-radius: 4px;
+    padding: 10px 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    transition: all 0.3s;
+    background: var(--surface);
+  }
+  .sw-node-box.sending  { border-color: var(--green);  box-shadow: var(--glow-green); color: var(--green); }
+  .sw-node-box.waiting  { border-color: var(--yellow); box-shadow: 0 0 12px rgba(255,215,0,0.3); color: var(--yellow); }
+  .sw-node-box.receiving{ border-color: var(--accent); box-shadow: var(--glow); color: var(--accent); }
+  .sw-node-box.timeout  { border-color: var(--red);    box-shadow: var(--glow-red); color: var(--red); animation: pulse-red 0.5s infinite; }
+  .sw-node-title { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .sw-node-state { font-size: 9px; margin-top: 4px; color: var(--muted); }
+  @keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  .sw-channel {
+    position: absolute;
+    border-top: 2px dashed var(--border);
+    transition: border-color 0.3s;
+  }
+  .sw-channel.active { border-color: var(--accent); border-style: solid; box-shadow: var(--glow); }
+
+  /* Timer ring */
+  .timer-ring-wrap {
+    position: absolute;
+    z-index: 15;
+    pointer-events: none;
+  }
+  .timer-ring-wrap svg circle { transition: stroke-dashoffset 0.1s linear; }
+
+  /* Seq numbers */
+  .seq-badge {
+    position: absolute;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(0,212,255,0.12);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 1px 6px;
+    z-index: 25;
+  }
+
+  /* ── Speed Slider ── */
+  .speed-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  input[type=range] {
+    width: 80px;
+    accent-color: var(--accent);
+  }
+
+  /* ── Tooltip ── */
+  .tooltip {
+    position: absolute;
+    background: #0d1a28;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    box-shadow: var(--glow);
+  }
+
+  /* ── Info Legend ── */
+  .legend {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── Attempt counter ── */
+  .attempt-counter {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* Grid bg */
+  .sim-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30,45,61,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,45,61,0.3) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NET<span>SIM</span> LAB</div>
+  <div class="course-tag">DATA COMMUNICATION &amp; NETWORKING // 2CS202CC23</div>
+  <div class="course-tag" style="color:var(--muted)">B.TECH CSE</div>
+</header>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btnCSMA" onclick="switchMode('csma')">⚡ CSMA/CD — Collision Detection</button>
+  <button class="mode-btn" id="btnSW"   onclick="switchMode('sw')">📦 Stop-and-Wait — Flow Control</button>
+</div>
+
+<div class="layout">
+  <!-- Canvas -->
+  <div class="canvas-panel">
+    <div class="panel-title">
+      <span class="dot"></span>
+      <span id="canvasTitle">CSMA/CD SIMULATION // ETHERNET BUS TOPOLOGY</span>
+    </div>
+    <div class="sim-area" id="simArea"></div>
+    <div class="status-bar" id="statusBar">
+      <div class="stat"><span class="stat-label">MEDIUM:</span><span class="stat-val" id="statMedium">IDLE</span></div>
+      <div class="stat"><span class="stat-label">COLLISIONS:</span><span class="stat-val red" id="statCollisions">0</span></div>
+      <div class="stat"><span class="stat-label">SUCCESS:</span><span class="stat-val green" id="statSuccess">0</span></div>
+      <div class="stat"><span class="stat-label">ATTEMPTS:</span><span class="stat-val" id="statAttempts">0</span></div>
+      <div class="speed-wrap">
+        SPD: <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1"> <span id="speedVal">1×</span>
+      </div>
+    </div>
+    <div class="controls" id="controls">
+      <button class="btn btn-primary" id="btnStart" onclick="handleStart()">▶ START TRANSMISSION</button>
+      <button class="btn btn-danger"  id="btnForce" onclick="handleForce()" disabled>⚡ FORCE COLLISION</button>
+      <button class="btn btn-muted"   id="btnReset" onclick="handleReset()">↺ RESET</button>
+    </div>
+    <div class="legend" id="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>IDLE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>SENSING</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>TRANSMITTING</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>COLLISION</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>BACKOFF</div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-panel">
+    <div class="panel-title">
+      <span class="dot" style="background:var(--green)"></span>
+      LIVE EVENT LOG
+    </div>
+    <div class="log-entries" id="logEntries"></div>
+    <div style="padding:8px;border-top:1px solid var(--border)">
+      <button class="btn btn-muted" style="width:100%;font-size:10px" onclick="clearLog()">CLEAR LOG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════
+let mode = 'csma';
+let simRunning = false;
+let forceCollision = false;
+let simSpeed = 1;
+let totalCollisions = 0;
+let totalSuccess = 0;
+let totalAttempts = 0;
+let simTime = 0; // ms
+let animFrames = [];
+let timeouts = [];
+
+// CSMA/CD State
+const csmaState = {
+  medium: 'IDLE', // IDLE | BUSY | COLLISION
+  nodes: [], // {id, x, y, state, backoffCount, seqNum}
+  packets: [], // DOM elements
+};
+
+// Stop-and-Wait State
+const swState = {
+  senderSeq: 0,
+  receiverExpected: 0,
+  waiting: false,
+  timerStart: null,
+  timerDuration: 3000,
+  dropRate: 0.25,
+  timeoutCount: 0,
+  framesSent: 0,
+  framesAcked: 0,
+};
+
+// ═══════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════
+function log(msg, type='info') {
+  const el = document.getElementById('logEntries');
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  const t = String(Math.round(simTime)).padStart(5,' ');
+  entry.innerHTML = `<span class="log-time">[${t}ms]</span>${msg}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('logEntries').innerHTML = '';
+}
+
+function updateStats() {
+  document.getElementById('statCollisions').textContent = totalCollisions;
+  document.getElementById('statSuccess').textContent = totalSuccess;
+  document.getElementById('statAttempts').textContent = totalAttempts;
+}
+
+function setMediumStatus(s) {
+  const el = document.getElementById('statMedium');
+  el.textContent = s;
+  el.className = 'stat-val' + (s==='IDLE'?' ':s==='BUSY'?' yellow':' red');
+}
+
+function rand(min,max) { return min + Math.random()*(max-min); }
+function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+
+function addTimeout(fn, delay) {
+  const id = setTimeout(() => { simTime += delay; fn(); }, delay / simSpeed);
+  timeouts.push(id);
+  return id;
+}
+
+function clearAllTimeouts() {
+  timeouts.forEach(clearTimeout);
+  timeouts = [];
+  animFrames.forEach(cancelAnimationFrame);
+  animFrames = [];
+}
+
+function createPacketEl(label, type='data') {
+  const el = document.createElement('div');
+  el.className = `packet ${type}`;
+  el.textContent = label;
+  document.getElementById('simArea').appendChild(el);
+  return el;
+}
+
+function removeEl(el) {
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+// ═══════════════════════════════════════════
+// MODE SWITCHING
+// ═══════════════════════════════════════════
+function switchMode(m) {
+  handleReset();
+  mode = m;
+  document.getElementById('btnCSMA').classList.toggle('active', m==='csma');
+  document.getElementById('btnSW').classList.toggle('active', m==='sw');
+
+  if (m==='csma') {
+    document.getElementById('canvasTitle').textContent = 'CSMA/CD SIMULATION // ETHERNET BUS TOPOLOGY';
+    document.getElementById('btnForce').disabled = true;
+    document.getElementById('btnForce').style.display = '';
+    document.getElementById('legend').innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>IDLE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>SENSING</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>TRANSMITTING</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>COLLISION</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>BACKOFF</div>`;
+    document.getElementById('statMedium').parentElement.style.display = '';
+    initCSMA();
+  } else {
+    document.getElementById('canvasTitle').textContent = 'STOP-AND-WAIT SIMULATION // ARQ FLOW CONTROL';
+    document.getElementById('btnForce').style.display = '';
+    document.getElementById('btnForce').disabled = true;
+    document.getElementById('legend').innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>DATA FRAME</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>ACK</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>NAK / TIMEOUT</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>WAITING</div>`;
+    document.getElementById('statMedium').parentElement.style.display = 'none';
+    initSW();
+  }
+  clearLog();
+  log(`>> ${m==='csma'?'CSMA/CD Collision Detection':'Stop-and-Wait ARQ'} protocol loaded`, 'system');
+}
+
+// ═══════════════════════════════════════════
+// CSMA / CD
+// ═══════════════════════════════════════════
+function initCSMA() {
+  const area = document.getElementById('simArea');
+  area.innerHTML = '';
+  csmaState.medium = 'IDLE';
+  csmaState.packets = [];
+
+  const W = area.offsetWidth, H = area.offsetHeight;
+  const busY = H / 2;
+  const busX1 = 100, busX2 = W - 100;
+
+  // Bus
+  const bus = document.createElement('div');
+  bus.id = 'csma-bus';
+  bus.className = 'bus-line';
+  bus.style.cssText = `left:${busX1}px;top:${busY}px;width:${busX2-busX1}px;height:4px;border-radius:2px`;
+  area.appendChild(bus);
+
+  // Vertical taps
+  const nodePositions = [
+    { id:'A', x: busX1+60 },
+    { id:'B', x: busX1 + (busX2-busX1)*0.33 },
+    { id:'C', x: busX1 + (busX2-busX1)*0.66 },
+    { id:'D', x: busX2-60 },
+  ];
+
+  csmaState.nodes = nodePositions.map(({id, x}) => {
+    const row = Math.random() > 0.5 ? -1 : 1; // above or below
+    const nodeY = busY + row * 80;
+    const nodeEl = document.createElement('div');
+    nodeEl.id = `node-${id}`;
+    nodeEl.className = 'csma-node idle';
+    nodeEl.innerHTML = `<span style="font-size:16px">💻</span><span>${id}</span><span class="csma-node-label" id="node-${id}-status">IDLE</span>`;
+    nodeEl.style.cssText = `left:${x-32}px;top:${nodeY-32}px`;
+    area.appendChild(nodeEl);
+
+    // Tap line
+    const tapH = Math.abs(nodeY - busY) - 2;
+    const tap = document.createElement('div');
+    tap.className = 'bus-line';
+    tap.id = `tap-${id}`;
+    const tapTop = Math.min(nodeY, busY) + 2;
+    tap.style.cssText = `left:${x-1}px;top:${tapTop}px;width:2px;height:${tapH}px`;
+    area.appendChild(tap);
+
+    return { id, x, y: nodeY, state:'idle', backoffCount:0, el: nodeEl, row };
+  });
+}
+
+function setNodeState(node, state) {
+  node.state = state;
+  node.el.className = `csma-node ${state}`;
+  document.getElementById(`node-${node.id}-status`).textContent = state.toUpperCase();
+}
+
+function setBusState(state) {
+  const bus = document.getElementById('csma-bus');
+  bus.className = `bus-line ${state}`;
+  csmaState.medium = state === '' ? 'IDLE' : state.toUpperCase();
+  setMediumStatus(csmaState.medium);
+}
+
+function animatePacket(fromX, fromY, toX, toY, label, type, duration, onDone) {
+  const area = document.getElementById('simArea');
+  const el = document.createElement('div');
+  el.className = `packet ${type}`;
+  el.textContent = label;
+  area.appendChild(el);
+
+  const pw = el.offsetWidth || 40;
+  const ph = el.offsetHeight || 16;
+  el.style.left = (fromX - pw/2) + 'px';
+  el.style.top  = (fromY - ph/2) + 'px';
+
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / (duration / simSpeed), 1);
+    const cx = fromX + (toX - fromX) * t - pw/2;
+    const cy = fromY + (toY - fromY) * t - ph/2;
+    el.style.left = cx + 'px';
+    el.style.top  = cy + 'px';
+    if (t < 1) { animFrames.push(requestAnimationFrame(step)); }
+    else { removeEl(el); if(onDone) onDone(); }
+  }
+  animFrames.push(requestAnimationFrame(step));
+  return el;
+}
+
+function showCollisionFlash(x, y) {
+  const area = document.getElementById('simArea');
+  const fl = document.createElement('div');
+  fl.className = 'collision-flash';
+  fl.style.cssText = `left:${x-30}px;top:${y-30}px;width:60px;height:60px`;
+  area.appendChild(fl);
+  addTimeout(() => removeEl(fl), 700);
+}
+
+function csmaTransmit(forced) {
+  if (!simRunning) return;
+
+  // Pick nodes to transmit (1 or 2 if forced)
+  const idleNodes = csmaState.nodes.filter(n => n.state === 'idle');
+  if (idleNodes.length === 0) return;
+
+  const txNodes = forced
+    ? (idleNodes.length >= 2 ? [idleNodes[0], idleNodes[1]] : idleNodes)
+    : (Math.random() < 0.4 && idleNodes.length >= 2 ? [idleNodes[0], idleNodes[1]] : [idleNodes[Math.floor(Math.random()*idleNodes.length)]]);
+
+  const area = document.getElementById('simArea');
+  const W = area.offsetWidth, H = area.offsetHeight;
+  const busY = H/2;
+
+  txNodes.forEach(n => {
+    totalAttempts++;
+    setNodeState(n, 'sensing');
+    log(`Node ${n.id} is sensing the carrier...`, 'info');
+  });
+
+  updateStats();
+
+  addTimeout(() => {
+    if (!simRunning) return;
+
+    // Check medium
+    const willCollide = txNodes.length > 1 || forced;
+
+    if (csmaState.medium === 'BUSY' && txNodes.length === 1) {
+      log(`Node ${txNodes[0].id}: Channel BUSY — deferring`, 'warn');
+      setNodeState(txNodes[0], 'backoff');
+      addTimeout(() => {
+        setNodeState(txNodes[0], 'idle');
+        csmaTransmit(false);
+      }, rand(800,1400));
+      return;
+    }
+
+    setBusState('active');
+    txNodes.forEach(n => {
+      setNodeState(n, 'sending');
+      log(`Node ${n.id} → transmitting on medium`, 'success');
+    });
+
+    // Animate packets
+    const collisionX = W/2;
+    txNodes.forEach((n,i) => {
+      const target = csmaState.nodes.find(x=>x.id !== n.id);
+      const destX = target ? target.x : W-100;
+      animatePacket(n.x, busY, destX, busY, `PKT-${n.id}`, 'data', willCollide ? rand(300,500) : 700, null);
+    });
+
+    if (willCollide) {
+      const midTime = rand(300,500);
+      addTimeout(() => {
+        if (!simRunning) return;
+        totalCollisions++;
+        setBusState('collision');
+        log(`⚡ COLLISION detected on medium! (t=${Math.round(simTime)}ms)`, 'error');
+        showCollisionFlash(collisionX, busY);
+
+        txNodes.forEach(n => {
+          setNodeState(n, 'collision');
+          // Jam signal
+          animatePacket(collisionX, busY, n.x, busY, 'JAM', 'jam', 300, null);
+        });
+
+        addTimeout(() => {
+          setBusState('');
+          txNodes.forEach(n => {
+            const k = Math.min(n.backoffCount, 10);
+            n.backoffCount++;
+            const slots = randInt(0, Math.pow(2,k)-1);
+            const backoffMs = slots * 512; // 512 bit-time units
+            log(`Node ${n.id}: Binary Exponential Backoff — attempt ${n.backoffCount}, k=${k}, slots=${slots} (~${backoffMs}µs)`, 'warn');
+            setNodeState(n, 'backoff');
+
+            addTimeout(() => {
+              if(!simRunning) return;
+              setNodeState(n, 'idle');
+            }, Math.max(400, slots*80));
+          });
+          updateStats();
+
+          addTimeout(() => {
+            if(!simRunning) return;
+            csmaTransmit(false);
+          }, rand(600,1200));
+        }, 400);
+
+      }, midTime);
+
+    } else {
+      // Success
+      const txNode = txNodes[0];
+      const target = csmaState.nodes.find(n => n.id !== txNode.id);
+      addTimeout(() => {
+        if (!simRunning) return;
+        totalSuccess++;
+        txNode.backoffCount = 0;
+        setBusState('');
+        setNodeState(txNode, 'success');
+        if (target) {
+          setNodeState(target, 'success');
+          log(`Node ${target.id} received frame from ${txNode.id} ✓`, 'success');
+          animatePacket(target.x, busY, txNode.x, busY, 'ACK', 'ack', 400, null);
+        }
+        log(`Frame delivered successfully (t=${Math.round(simTime)}ms)`, 'success');
+        updateStats();
+
+        addTimeout(() => {
+          setNodeState(txNode, 'idle');
+          if(target) setNodeState(target, 'idle');
+          addTimeout(() => { if(simRunning) csmaTransmit(false); }, rand(500,1000));
+        }, 600);
+      }, rand(600,900));
+    }
+  }, rand(100, 300));
+}
+
+// ═══════════════════════════════════════════
+// STOP-AND-WAIT ARQ
+// ═══════════════════════════════════════════
+let swTimerInterval = null;
+let swTimerLeft = 0;
+let swTimerEl = null;
+
+function initSW() {
+  const area = document.getElementById('simArea');
+  area.innerHTML = '';
+
+  const W = area.offsetWidth, H = area.offsetHeight;
+  const chanY = H / 2;
+  const senderX = 80, receiverX = W - 80;
+
+  // Channel
+  const chan = document.createElement('div');
+  chan.id = 'sw-channel';
+  chan.className = 'sw-channel';
+  chan.style.cssText = `left:${senderX+40}px;top:${chanY}px;width:${receiverX-senderX-80}px`;
+  area.appendChild(chan);
+
+  // Forward channel label
+  const fwdLabel = document.createElement('div');
+  fwdLabel.style.cssText = `position:absolute;left:${W/2-40}px;top:${chanY-18}px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)`;
+  fwdLabel.textContent = '→ DATA →';
+  area.appendChild(fwdLabel);
+
+  const bwdLabel = document.createElement('div');
+  bwdLabel.style.cssText = `position:absolute;left:${W/2-40}px;top:${chanY+8}px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)`;
+  bwdLabel.textContent = '← ACK ←';
+  area.appendChild(bwdLabel);
+
+  // Sender
+  const sndEl = document.createElement('div');
+  sndEl.id = 'sw-sender';
+  sndEl.className = 'sw-node';
+  sndEl.style.cssText = `left:${senderX-40}px;top:${chanY-60}px`;
+  sndEl.innerHTML = `
+    <div class="sw-node-title">SENDER</div>
+    <div class="sw-node-box" id="sw-sender-box">READY</div>
+    <div class="sw-node-state" id="sw-sender-state">Seq=0 | Window=1</div>`;
+  area.appendChild(sndEl);
+
+  // Receiver
+  const rcvEl = document.createElement('div');
+  rcvEl.id = 'sw-receiver';
+  rcvEl.className = 'sw-node';
+  rcvEl.style.cssText = `left:${receiverX-40}px;top:${chanY-60}px`;
+  rcvEl.innerHTML = `
+    <div class="sw-node-title">RECEIVER</div>
+    <div class="sw-node-box" id="sw-receiver-box">READY</div>
+    <div class="sw-node-state" id="sw-receiver-state">Exp=0</div>`;
+  area.appendChild(rcvEl);
+
+  // Timer display
+  const timerEl = document.createElement('div');
+  timerEl.id = 'sw-timer';
+  timerEl.style.cssText = `position:absolute;left:${senderX-10}px;top:${chanY+30}px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--yellow);display:none`;
+  timerEl.innerHTML = '⏱ TIMER: <span id="sw-timer-val">3.0s</span>';
+  area.appendChild(timerEl);
+  swTimerEl = timerEl;
+
+  // Reset SW state
+  swState.senderSeq = 0;
+  swState.receiverExpected = 0;
+  swState.waiting = false;
+  swState.timerStart = null;
+  swState.timeoutCount = 0;
+  swState.framesSent = 0;
+  swState.framesAcked = 0;
+  document.getElementById('statMedium').parentElement.style.display = 'none';
+}
+
+function setSWNodeState(who, state, text) {
+  const box = document.getElementById(`sw-${who}-box`);
+  box.className = `sw-node-box ${state}`;
+  box.textContent = text;
+}
+
+function updateSWState() {
+  document.getElementById('sw-sender-state').textContent = `Seq=${swState.senderSeq} | Sent=${swState.framesSent}`;
+  document.getElementById('sw-receiver-state').textContent = `Exp=${swState.receiverExpected} | Rcvd=${swState.framesAcked}`;
+}
+
+function startSWTimer() {
+  clearSWTimer();
+  swState.timerStart = Date.now();
+  swTimerEl.style.display = '';
+  swTimerInterval = setInterval(() => {
+    if (!swState.timerStart) return;
+    const elapsed = (Date.now() - swState.timerStart) / 1000;
+    const left = Math.max(0, swState.timerDuration/1000/simSpeed - elapsed).toFixed(1);
+    document.getElementById('sw-timer-val').textContent = left + 's';
+  }, 100);
+}
+
+function clearSWTimer() {
+  if (swTimerInterval) { clearInterval(swTimerInterval); swTimerInterval = null; }
+  swState.timerStart = null;
+  if (swTimerEl) swTimerEl.style.display = 'none';
+}
+
+function swSendFrame() {
+  if (!simRunning || swState.waiting) return;
+  const area = document.getElementById('simArea');
+  const W = area.offsetWidth, H = area.offsetHeight;
+  const chanY = H/2;
+  const senderX = 80, receiverX = W - 80;
+
+  swState.waiting = true;
+  swState.framesSent++;
+  totalAttempts++;
+  updateStats();
+
+  const seq = swState.senderSeq;
+  setSWNodeState('sender', 'sending', `SENDING [${seq}]`);
+  document.getElementById('sw-channel').className = 'sw-channel active';
+  log(`Sender transmitting Frame [Seq=${seq}]`, 'info');
+  log(`Sender starts timeout timer (${(swState.timerDuration/1000).toFixed(1)}s)`, 'warn');
+  startSWTimer();
+  updateSWState();
+
+  const travel = rand(600, 1000);
+  animatePacket(senderX+40, chanY-4, receiverX-40, chanY-4, `[${seq}]`, 'data', travel, () => {
+    if (!simRunning) return;
+
+    // Simulate random frame drop
+    const dropped = Math.random() < swState.dropRate;
+    if (dropped) {
+      log(`⚠ Frame [Seq=${seq}] LOST in channel (noise/corruption)`, 'error');
+      setSWNodeState('sender', 'waiting', `WAIT ACK[${seq}]`);
+
+      // Timeout → retransmit
+      addTimeout(() => {
+        if (!simRunning) return;
+        swState.timeoutCount++;
+        totalCollisions++; // reuse as error counter
+        clearSWTimer();
+        log(`⏱ TIMEOUT! No ACK received for Frame [${seq}]. Retransmitting...`, 'error');
+        setSWNodeState('sender', 'timeout', 'TIMEOUT!');
+        updateStats();
+
+        addTimeout(() => {
+          if(!simRunning) return;
+          swState.waiting = false;
+          swSendFrame();
+        }, 400);
+      }, swState.timerDuration);
+      return;
+    }
+
+    // Frame received
+    const correct = swState.receiverExpected === seq;
+    log(`Receiver got Frame [Seq=${seq}] — expected ${swState.receiverExpected} → ${correct?'ACCEPTED':'DISCARDED'}`, correct?'success':'warn');
+
+    if (correct) {
+      swState.receiverExpected = 1 - swState.receiverExpected;
+      setSWNodeState('receiver', 'receiving', `RECV [${seq}]`);
+      addTimeout(() => setSWNodeState('receiver', '', 'READY'), 800);
+
+      // Simulate ACK drop
+      const ackDropped = Math.random() < swState.dropRate * 0.5;
+      if (ackDropped) {
+        log(`⚠ ACK[${seq}] LOST in return channel!`, 'error');
+        setSWNodeState('sender', 'waiting', `WAIT ACK[${seq}]`);
+        addTimeout(() => {
+          if(!simRunning) return;
+          swState.timeoutCount++;
+          totalCollisions++;
+          clearSWTimer();
+          log(`⏱ TIMEOUT! ACK was lost. Retransmitting Frame [${seq}]...`, 'error');
+          setSWNodeState('sender','timeout','TIMEOUT!');
+          updateStats();
+          addTimeout(() => { swState.waiting=false; swSendFrame(); }, 400);
+        }, swState.timerDuration);
+        return;
+      }
+
+      // Send ACK
+      setSWNodeState('receiver', 'receiving', `SEND ACK[${seq}]`);
+      log(`Receiver sending ACK [${seq}]`, 'success');
+      const ackTravel = rand(500, 800);
+      animatePacket(receiverX-40, chanY+4, senderX+40, chanY+4, `ACK[${seq}]`, 'ack', ackTravel, () => {
+        if (!simRunning) return;
+        clearSWTimer();
+        swState.framesAcked++;
+        totalSuccess++;
+        swState.senderSeq = 1 - swState.senderSeq;
+        log(`✓ ACK[${seq}] received — Frame delivered! Next Seq=${swState.senderSeq}`, 'success');
+        setSWNodeState('sender', 'sending', `ACK OK [${seq}]`);
+        document.getElementById('sw-channel').className = 'sw-channel';
+        updateSWState();
+        updateStats();
+
+        addTimeout(() => {
+          if(!simRunning) return;
+          setSWNodeState('sender','','READY');
+          swState.waiting = false;
+          addTimeout(() => { if(simRunning) swSendFrame(); }, rand(300,700));
+        }, 400);
+      });
+    } else {
+      // Wrong sequence — send NAK
+      log(`Receiver sending NAK [${seq}] — unexpected sequence`, 'warn');
+      setSWNodeState('receiver', '', 'READY');
+      animatePacket(receiverX-40, chanY+4, senderX+40, chanY+4, `NAK[${seq}]`, 'nak', rand(400,700), () => {
+        if(!simRunning) return;
+        clearSWTimer();
+        swState.waiting = false;
+        log(`Sender got NAK — retransmitting`, 'warn');
+        addTimeout(() => { if(simRunning) swSendFrame(); }, 200);
+      });
+    }
+    updateSWState();
+  });
+}
+
+// ═══════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════
+function handleStart() {
+  if (simRunning) return;
+  simRunning = true;
+  simTime = 0;
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnForce').disabled = false;
+  log(`▶ Simulation STARTED`, 'system');
+
+  if (mode === 'csma') {
+    setBusState('');
+    csmaTransmit(false);
+  } else {
+    swSendFrame();
+  }
+}
+
+function handleForce() {
+  if (!simRunning) return;
+  if (mode === 'csma') {
+    log(`⚡ FORCED COLLISION triggered by user`, 'warn');
+    csmaTransmit(true);
+  } else {
+    // Force timeout in S&W
+    log(`⚡ FORCING timeout/frame drop scenario`, 'warn');
+    swState.dropRate = 0.95;
+    addTimeout(() => { swState.dropRate = 0.25; }, 3000);
+  }
+}
+
+function handleReset() {
+  simRunning = false;
+  clearAllTimeouts();
+  clearSWTimer();
+
+  totalCollisions = 0;
+  totalSuccess = 0;
+  totalAttempts = 0;
+  simTime = 0;
+
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnForce').disabled = true;
+  setMediumStatus('IDLE');
+  updateStats();
+  clearLog();
+
+  if (mode === 'csma') {
+    initCSMA();
+    log('System RESET — CSMA/CD ready', 'system');
+  } else {
+    initSW();
+    log('System RESET — Stop-and-Wait ready', 'system');
+    log(`Drop rate: ${(swState.dropRate*100).toFixed(0)}% | Timer: ${swState.timerDuration/1000}s`, 'system');
+  }
+}
+
+// ═══════════════════════════════════════════
+// SPEED SLIDER
+// ═══════════════════════════════════════════
+document.getElementById('speedSlider').addEventListener('input', function() {
+  simSpeed = parseFloat(this.value);
+  document.getElementById('speedVal').textContent = simSpeed + '×';
+});
+
+// ═══════════════════════════════════════════
+// STAT LABEL OVERRIDE FOR SW
+// ═══════════════════════════════════════════
+function updateStatsLabel() {
+  if (mode === 'sw') {
+    document.getElementById('statCollisions').parentElement.querySelector('.stat-label').textContent = 'ERRORS:';
+    document.getElementById('statSuccess').parentElement.querySelector('.stat-label').textContent = 'DELIVERED:';
+    document.getElementById('statAttempts').parentElement.querySelector('.stat-label').textContent = 'FRAMES SENT:';
+  } else {
+    document.getElementById('statCollisions').parentElement.querySelector('.stat-label').textContent = 'COLLISIONS:';
+    document.getElementById('statSuccess').parentElement.querySelector('.stat-label').textContent = 'SUCCESS:';
+    document.getElementById('statAttempts').parentElement.querySelector('.stat-label').textContent = 'ATTEMPTS:';
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('load', () => {
+  initCSMA();
+  log('>> CSMA/CD Collision Detection protocol loaded', 'system');
+  log('>> Press START TRANSMISSION to begin simulation', 'system');
+  log('>> Use FORCE COLLISION to trigger simultaneous transmissions', 'system');
+});
+
+window.addEventListener('resize', () => {
+  if (!simRunning) {
+    mode === 'csma' ? initCSMA() : initSW();
+  }
+});
+
+// Override updateStats to also update labels
+const _updateStats = updateStats;
+function updateStats() {
+  _updateStats();
+  updateStatsLabel();
+}
+</script>
+</body>
+</html>
