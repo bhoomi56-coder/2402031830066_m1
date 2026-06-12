@@ -1,18 +1,47 @@
 import { useState } from "react";
 
-function Counter() {
-  const [count, setCount] = useState(0);
+function App() {
 
-  function increase() {
-    setCount(count + 1);
-  }
+  const [task, setTask] = useState("");
+  const [todos, setTodos] = useState([]);
+
+  const addTask = () => {
+    if (task.trim() === "") {
+      return;
+    }
+
+    setTodos([...todos, task]);
+    setTask("");
+  };
 
   return (
-    <div>
-      <h1>{count}</h1>
-      <button onClick={increase}>Increase</button>
+    <div className="container">
+
+      <h1>Todo App</h1>
+
+      <div className="input-box">
+
+        <input
+          type="text"
+          placeholder="Enter Task"
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+        />
+
+        <button onClick={addTask}>
+          Add
+        </button>
+
+      </div>
+
+      <ul>
+        {todos.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+
     </div>
   );
 }
 
-export default Counter;
+export default App;
